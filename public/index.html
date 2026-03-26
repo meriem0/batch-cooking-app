@@ -1,0 +1,1266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Batch Cooking — Cuisines du Monde</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --green-50: #EAF3DE; --green-100: #C0DD97; --green-400: #639922; --green-600: #3B6D11; --green-800: #27500A;
+  --amber-50: #FAEEDA; --amber-100: #FAC775; --amber-600: #854F0B; --amber-800: #633806;
+  --blue-50: #E6F1FB; --blue-100: #B5D4F4; --blue-600: #185FA5; --blue-800: #0C447C;
+  --red-50: #FCEBEB; --red-100: #F7C1C1; --red-600: #A32D2D; --red-800: #791F1F;
+  --purple-50: #EEEDFE; --purple-600: #534AB7; --purple-800: #26215C;
+  --gray-50: #F8F7F4; --gray-100: #EDEBE4; --gray-200: #D3D1C7; --gray-400: #888780; --gray-700: #444441;
+  --bg: #FFFFFF; --bg2: #F8F7F4; --bg3: #F0EEE8;
+  --text: #1A1A18; --text2: #5F5E5A; --text3: #9E9C95;
+  --border: rgba(0,0,0,0.10); --border2: rgba(0,0,0,0.18);
+  --radius: 10px; --radius-lg: 14px; --radius-xl: 20px;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --serif: 'Fraunces', Georgia, serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1C1C1A; --bg2: #242422; --bg3: #2C2C29;
+    --text: #F0EEE8; --text2: #A8A69F; --text3: #6B6966;
+    --border: rgba(255,255,255,0.10); --border2: rgba(255,255,255,0.18);
+    --green-50: #1A2E0D; --green-100: #2A4A18; --amber-50: #2A1F08; --amber-100: #3D2C0C;
+    --blue-50: #0D1E30; --blue-100: #122A44; --red-50: #2A0D0D; --red-100: #3D1212;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg3);font-family:var(--sans);color:var(--text);min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:16px 0 40px}
+.phone{width:390px;background:var(--bg);border-radius:44px;border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;min-height:844px;position:relative}
+.status-bar{padding:14px 24px 0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.status-time{font-size:15px;font-weight:500;color:var(--text)}
+.status-right{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--text2)}
+.app-bar{padding:10px 20px 8px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-bar-left{display:flex;align-items:center;gap:10px}
+.app-icon{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:background .2s}
+.app-title{font-family:var(--serif);font-size:18px;font-weight:500;color:var(--text)}
+.app-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.lang-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;font-size:12px;color:var(--text2);font-family:var(--sans)}
+.lang-btn:hover{background:var(--bg3)}
+.lang-flag{font-size:14px}
+
+/* AUDIO BAR */
+.audio-bar{display:none;margin:0 20px 8px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);align-items:center;gap:10px}
+.audio-bar.show{display:flex}
+.audio-bar.playing{background:var(--green-50);border-color:var(--green-100)}
+.audio-play-btn{width:30px;height:30px;border-radius:50%;border:none;background:var(--green-600);color:#fff;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.audio-info{flex:1;min-width:0}
+.audio-track{font-size:11px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px}
+.audio-progress{height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
+.audio-fill{height:100%;width:0%;background:var(--green-600);border-radius:2px;transition:width .8s linear}
+.audio-time{font-size:10px;color:var(--text3);flex-shrink:0}
+.audio-close{background:none;border:none;cursor:pointer;font-size:14px;color:var(--text3);padding:2px;flex-shrink:0}
+
+/* SCREENS */
+.screen{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:12px}
+.screen.active{display:block}
+.sp{padding:0 20px}
+.section-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:7px}
+.dvd{height:1px;background:var(--border);margin:10px 20px}
+
+/* INPUTS */
+.input-row{display:flex;gap:7px;padding:0 20px 9px;align-items:center}
+.input-row input{flex:1;height:38px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--bg2);padding:0 12px;font-size:13px;color:var(--text);outline:none;font-family:var(--sans)}
+.input-row input:focus{border-color:var(--green-400)}
+.input-row input::placeholder{color:var(--text3)}
+.add-btn{height:38px;padding:0 14px;border-radius:var(--radius);border:none;color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:opacity .15s}
+.add-btn:hover{opacity:.88}
+.add-btn.g{background:var(--green-600)}
+.add-btn.o{background:var(--amber-600)}
+.add-btn.b{background:var(--blue-600)}
+
+/* CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:5px;padding:0 20px 9px}
+.chip{display:flex;align-items:center;gap:4px;border-radius:20px;padding:4px 9px 4px 11px;font-size:12px;border:1px solid transparent;font-family:var(--sans)}
+.chip.g{background:var(--green-50);border-color:var(--green-100);color:var(--green-800)}
+.chip.o{background:var(--amber-50);border-color:var(--amber-100);color:var(--amber-800)}
+.chip.b{background:var(--blue-50);border-color:var(--blue-100);color:var(--blue-800)}
+.chip-x{width:14px;height:14px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;line-height:1;padding:0}
+.chip.g .chip-x{background:var(--green-100);color:var(--green-800)}
+.chip.o .chip-x{background:var(--amber-100);color:var(--amber-800)}
+.chip.b .chip-x{background:var(--blue-100);color:var(--blue-800)}
+
+/* PREFS */
+.pref-row{display:flex;flex-wrap:wrap;gap:5px;padding:0 20px 9px}
+.pref-btn{padding:5px 11px;border-radius:20px;border:1px solid var(--border2);font-size:11px;cursor:pointer;background:transparent;color:var(--text2);font-family:var(--sans);transition:all .15s}
+.pref-btn.on.g{background:var(--green-50);border-color:var(--green-100);color:var(--green-800);font-weight:500}
+.pref-btn.on.o{background:var(--amber-50);border-color:var(--amber-100);color:var(--amber-800);font-weight:500}
+.pref-btn.on.b{background:var(--blue-50);border-color:var(--blue-100);color:var(--blue-800);font-weight:500}
+
+/* GENERATE BUTTON */
+.gen-btn{display:block;margin:0 20px 12px;width:calc(100% - 40px);padding:13px;border-radius:var(--radius-lg);border:none;color:#fff;font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);letter-spacing:.01em;transition:opacity .15s}
+.gen-btn.g{background:var(--green-600)}
+.gen-btn.o{background:var(--amber-600)}
+.gen-btn.b{background:var(--blue-600)}
+.gen-btn:hover{opacity:.9}
+.gen-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* COUNTRY GRID */
+.country-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 20px 9px}
+.country-btn{border:1px solid var(--border);border-radius:var(--radius);padding:8px 4px;cursor:pointer;background:var(--bg2);text-align:center;transition:all .12s;font-family:var(--sans)}
+.country-btn:hover{border-color:var(--border2)}
+.country-flag{font-size:19px;display:block;margin-bottom:2px;line-height:1}
+.country-name{font-size:10px;color:var(--text2);line-height:1.2}
+.country-btn.sg{border:2px solid var(--green-400);background:var(--green-50)}.country-btn.sg .country-name{color:var(--green-800);font-weight:500}
+.country-btn.so{border:2px solid var(--amber-600);background:var(--amber-50)}.country-btn.so .country-name{color:var(--amber-800);font-weight:500}
+.country-btn.sb{border:2px solid var(--blue-600);background:var(--blue-50)}.country-btn.sb .country-name{color:var(--blue-800);font-weight:500}
+.sel-info{font-size:11px;color:var(--text3);padding:0 20px 7px}
+.sel-info span{color:var(--text);font-weight:500}
+
+/* TIME FILTER */
+.time-filter{display:flex;gap:5px;padding:0 20px 9px}
+.time-btn{flex:1;padding:7px 2px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;font-size:10px;color:var(--text2);cursor:pointer;text-align:center;font-family:var(--sans);transition:all .12s}
+.time-btn.sg{background:var(--green-50);border-color:var(--green-100);color:var(--green-800);font-weight:500}
+.time-btn.so{background:var(--amber-50);border-color:var(--amber-100);color:var(--amber-800);font-weight:500}
+.time-btn.sb{background:var(--blue-50);border-color:var(--blue-100);color:var(--blue-800);font-weight:500}
+
+/* KIDS */
+.age-row{display:flex;gap:6px;padding:0 20px 9px}
+.age-btn{flex:1;padding:8px 4px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;font-size:11px;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .12s}
+.age-btn.sel{background:var(--amber-50);border-color:var(--amber-100);color:var(--amber-800);font-weight:500}
+.veg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:0 20px 9px}
+.veg-btn{padding:7px 4px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg2);font-size:11px;color:var(--text2);cursor:pointer;text-align:center;font-family:var(--sans);transition:all .12s}
+.veg-btn:hover{border-color:var(--border2)}
+.veg-btn.sel{background:var(--red-50);border-color:var(--red-100);color:var(--red-800);font-weight:500}
+
+/* REGIME */
+.regime-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 20px 10px}
+.regime-card{border:1px solid var(--border);border-radius:var(--radius-lg);padding:11px;cursor:pointer;background:var(--bg);transition:all .12s}
+.regime-card:hover{border-color:var(--border2)}
+.regime-card.sel{border:2px solid var(--blue-600);background:var(--blue-50)}
+.regime-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;background:var(--bg2);margin-bottom:6px;transition:background .2s}
+.regime-card.sel .regime-icon{background:var(--blue-100)}
+.regime-name{font-size:12px;font-weight:500;color:var(--text)}
+.regime-tag{font-size:10px;color:var(--text3);margin-top:2px}
+.regime-card.sel .regime-name{color:var(--blue-800)}
+.regime-card.sel .regime-tag{color:var(--blue-600)}
+
+/* RECIPE CARDS */
+.results{padding:0 20px 4px}
+.recipe-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px;margin-bottom:10px;transition:border-color .15s}
+.recipe-card:hover{border-color:var(--border2)}
+.recipe-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px}
+.recipe-name{font-family:var(--serif);font-size:15px;font-weight:500;color:var(--text);flex:1;margin-right:8px;line-height:1.3}
+.recipe-actions{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.match-badge{font-size:10px;padding:3px 7px;border-radius:20px;white-space:nowrap;font-weight:500}
+.match-badge.g{background:var(--green-50);color:var(--green-800)}
+.match-badge.o{background:var(--amber-50);color:var(--amber-800)}
+.match-badge.b{background:var(--blue-50);color:var(--blue-800)}
+.fav-btn{width:26px;height:26px;border-radius:8px;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all .15s}
+.fav-btn:hover{border-color:var(--border2)}
+.fav-btn.saved{background:var(--red-50);border-color:var(--red-100);color:var(--red-600)}
+.recipe-origin{font-size:11px;color:var(--text3);margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.recipe-times{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+.time-pill{background:var(--bg2);border-radius:7px;padding:4px 8px;font-size:10px;color:var(--text2)}
+.time-pill span{font-weight:500;color:var(--text)}
+.recipe-desc{font-size:12px;color:var(--text2);margin-bottom:6px;line-height:1.5}
+.recipe-meta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:7px}
+.recipe-meta-item{font-size:10px;color:var(--text3)}
+.recipe-meta-item b{color:var(--text2);font-weight:500}
+.recipe-extra{margin-top:5px;background:var(--green-50);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--green-800)}
+.recipe-missing{margin-top:5px;font-size:11px;color:var(--text3)}
+.recipe-missing strong{color:var(--red-600);font-weight:500}
+.recipe-media{display:flex;gap:7px;margin-top:9px}
+.audio-listen-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;font-size:11px;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .15s}
+.audio-listen-btn:hover,.audio-listen-btn.playing{background:var(--green-50);border-color:var(--green-100);color:var(--green-800)}
+.video-open-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;font-size:11px;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .15s}
+.video-open-btn:hover{background:var(--bg2)}
+.recipe-full-btn{margin-top:7px;width:100%;padding:8px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .12s}
+.recipe-full-btn:hover{background:var(--bg2);border-color:var(--border2)}
+
+/* LOADING */
+.loading-box{text-align:center;padding:28px 20px;color:var(--text3);font-size:13px}
+.loading-dots{display:flex;justify-content:center;gap:6px;margin-bottom:12px}
+.loading-dot{width:7px;height:7px;border-radius:50%;background:var(--green-400);animation:pulse 1.2s infinite}
+.loading-dot:nth-child(2){animation-delay:.3s;background:var(--amber-600)}
+.loading-dot:nth-child(3){animation-delay:.6s;background:var(--blue-600)}
+@keyframes pulse{0%,100%{opacity:.2;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+.empty-state{text-align:center;padding:32px 20px;color:var(--text3);font-size:13px;line-height:1.7}
+.empty-icon{font-size:36px;margin-bottom:10px}
+
+/* FAVORITES */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 20px 12px}
+.stat-card{background:var(--bg2);border-radius:var(--radius);padding:11px;text-align:center}
+.stat-val{font-family:var(--serif);font-size:22px;font-weight:500;color:var(--text)}
+.stat-lbl{font-size:10px;color:var(--text3);margin-top:2px}
+.fav-list{padding:0 20px 10px}
+.fav-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.fav-item:last-child{border-bottom:none}
+.fav-flag{font-size:18px;flex-shrink:0}
+.fav-info{flex:1;min-width:0}
+.fav-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fav-meta{font-size:10px;color:var(--text3);margin-top:2px}
+.fav-item-actions{display:flex;gap:5px;flex-shrink:0}
+.fav-plan-btn{padding:4px 9px;border-radius:7px;border:1px solid var(--border2);background:transparent;font-size:10px;color:var(--text2);cursor:pointer;font-family:var(--sans)}
+.fav-plan-btn:hover{background:var(--bg2)}
+.fav-del-btn{padding:4px 8px;border-radius:7px;border:1px solid var(--red-100);background:var(--red-50);font-size:10px;color:var(--red-600);cursor:pointer;font-family:var(--sans)}
+
+/* PLANNING */
+.plan-actions{display:flex;gap:8px;padding:0 20px 10px}
+.plan-action-btn{flex:1;padding:9px;border-radius:var(--radius);border:1px solid var(--border2);background:transparent;font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--sans);transition:all .12s}
+.plan-action-btn:hover{background:var(--bg2)}
+.plan-week{padding:0 20px 10px}
+.plan-day{margin-bottom:9px;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.plan-day-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--bg2)}
+.plan-day-name{font-size:13px;font-weight:500;color:var(--text)}
+.plan-day-count{font-size:10px;color:var(--text3)}
+.plan-meals{padding:8px 13px;display:flex;flex-direction:column;gap:5px}
+.meal-slot{display:flex;align-items:center;gap:7px}
+.meal-label{font-size:10px;color:var(--text3);width:40px;flex-shrink:0}
+.meal-pill{flex:1;padding:5px 10px;border-radius:8px;background:var(--bg2);border:1px solid var(--border);font-size:11px;color:var(--text3);cursor:pointer;text-align:left;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--sans);transition:all .12s}
+.meal-pill.has-g{background:var(--green-50);border-color:var(--green-100);color:var(--green-800);font-style:normal;font-weight:500}
+.meal-pill.has-o{background:var(--amber-50);border-color:var(--amber-100);color:var(--amber-800);font-style:normal;font-weight:500}
+.meal-pill.has-b{background:var(--blue-50);border-color:var(--blue-100);color:var(--blue-800);font-style:normal;font-weight:500}
+.meal-remove-btn{background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3);padding:0;flex-shrink:0}
+.meal-remove-btn:hover{color:var(--red-600)}
+
+/* MODALS */
+.modal-overlay{background:rgba(0,0,0,0.5);padding:40px 20px 20px;display:flex;align-items:flex-end;justify-content:center;min-height:360px}
+.modal-box{background:var(--bg);border-radius:var(--radius-xl);padding:18px;width:100%;border:1px solid var(--border)}
+.modal-title{font-family:var(--serif);font-size:16px;font-weight:500;color:var(--text);margin-bottom:4px}
+.modal-sub{font-size:11px;color:var(--text3);margin-bottom:12px}
+.modal-cancel{width:100%;padding:10px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;font-size:13px;color:var(--text2);cursor:pointer;font-family:var(--sans);margin-top:8px}
+.modal-cancel:hover{background:var(--bg2)}
+.assign-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
+.assign-opt{padding:9px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg2);font-size:11px;cursor:pointer;text-align:center;color:var(--text);font-family:var(--sans);transition:all .12s}
+.assign-opt:hover{background:var(--green-50);border-color:var(--green-100);color:var(--green-800)}
+.lang-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0}
+.lang-btn-item{border:1px solid var(--border);border-radius:var(--radius);padding:10px 4px;cursor:pointer;background:var(--bg2);text-align:center;transition:all .12s;font-family:var(--sans)}
+.lang-btn-item:hover{border-color:var(--border2)}
+.lang-btn-item .lf{font-size:20px;display:block;margin-bottom:3px;line-height:1}
+.lang-btn-item .ln{font-size:10px;color:var(--text2);line-height:1.2}
+.lang-btn-item.sel{border:2px solid var(--green-400);background:var(--green-50)}
+.lang-btn-item.sel .ln{color:var(--green-800);font-weight:500}
+
+/* VIDEO MODAL */
+.video-overlay{background:#0D0D0B;padding:20px 16px;display:flex;flex-direction:column;gap:10px;min-height:400px;justify-content:center}
+.video-hero{border-radius:var(--radius-lg);background:#1A1A18;width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.08)}
+.video-hero-content{text-align:center}
+.video-hero-flag{font-size:44px;margin-bottom:8px;display:block}
+.video-hero-title{font-family:var(--serif);font-size:15px;color:#F0EEE8;margin-bottom:3px}
+.video-hero-sub{font-size:11px;color:rgba(255,255,255,0.45)}
+.video-list{display:flex;flex-direction:column;gap:7px}
+.video-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);cursor:pointer;text-decoration:none;transition:background .12s}
+.video-item:hover{background:rgba(255,255,255,0.11)}
+.video-thumb{width:44px;height:31px;border-radius:6px;background:rgba(255,50,50,0.25);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;color:#fff}
+.video-item-info{flex:1}
+.video-item-name{font-size:11px;font-weight:500;color:#F0EEE8;margin-bottom:2px}
+.video-item-ch{font-size:10px;color:rgba(255,255,255,0.4)}
+.video-close-btn{padding:10px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.15);background:transparent;font-size:12px;color:rgba(255,255,255,0.6);cursor:pointer;font-family:var(--sans)}
+.video-close-btn:hover{background:rgba(255,255,255,0.07)}
+
+/* BOTTOM NAV */
+.bottom-nav{display:flex;border-top:1px solid var(--border);background:var(--bg);padding:6px 4px 20px;flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent;padding:6px 2px;border-radius:12px;font-family:var(--sans);transition:all .12s}
+.nav-item .nav-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;transition:background .15s}
+.nav-item .nav-label{font-size:9px;color:var(--text3);transition:color .15s}
+.nav-item.active-g .nav-icon{background:var(--green-50)}.nav-item.active-g .nav-label{color:var(--green-800);font-weight:500}
+.nav-item.active-o .nav-icon{background:var(--amber-50)}.nav-item.active-o .nav-label{color:var(--amber-800);font-weight:500}
+.nav-item.active-b .nav-icon{background:var(--blue-50)}.nav-item.active-b .nav-label{color:var(--blue-800);font-weight:500}
+.nav-item.active-r .nav-icon{background:var(--red-50)}.nav-item.active-r .nav-label{color:var(--red-800);font-weight:500}
+.nav-item.active-p .nav-icon{background:var(--purple-50)}.nav-item.active-p .nav-label{color:var(--purple-800);font-weight:500}
+
+/* SCROLLBAR */
+.screen::-webkit-scrollbar{width:3px}
+.screen::-webkit-scrollbar-track{background:transparent}
+.screen::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+  <!-- STATUS BAR -->
+  <div class="status-bar">
+    <span class="status-time" id="clockTime">9:41</span>
+    <div class="status-right">
+      <span>●●●</span>
+      <span>WiFi</span>
+      <span>🔋</span>
+    </div>
+  </div>
+
+  <!-- APP BAR -->
+  <div class="app-bar">
+    <div class="app-bar-left">
+      <div class="app-icon" id="appIcon" style="background:var(--green-50);font-size:18px">🥦</div>
+      <div>
+        <div class="app-title" id="appTitle">Mon frigo</div>
+        <div class="app-sub" id="appSub">Cuisines du monde · Audio · Vidéo</div>
+        <div style="display:inline-flex;align-items:center;gap:3px;margin-top:3px;background:var(--green-50);border:1px solid var(--green-100);border-radius:20px;padding:2px 8px;font-size:10px;color:var(--green-800);font-weight:500">✓ Sans porc · Sans alcool</div>
+      </div>
+    </div>
+    <button class="lang-btn" onclick="openLangModal()">
+      <span class="lang-flag" id="langFlag">🇫🇷</span>
+      <span id="langName">Français</span>
+      <span style="font-size:9px;color:var(--text3)">▾</span>
+    </button>
+  </div>
+
+  <!-- AUDIO BAR -->
+  <div class="audio-bar" id="audioBar">
+    <button class="audio-play-btn" id="audioPlayBtn" onclick="toggleAudioPlayback()">▶</button>
+    <div class="audio-info">
+      <div class="audio-track" id="audioTrack">Recette en lecture...</div>
+      <div class="audio-progress"><div class="audio-fill" id="audioFill"></div></div>
+    </div>
+    <span class="audio-time" id="audioTime">0:00</span>
+    <button class="audio-close" onclick="stopAudio()">✕</button>
+  </div>
+
+  <!-- SCREEN: FRIGO -->
+  <div class="screen active" id="screen-frigo">
+    <div class="input-row">
+      <input type="text" id="frigInput" placeholder="Ex: carottes, œufs, riz..." onkeydown="if(event.key==='Enter')addIngredient('frigo','frigInput','g')">
+      <button class="add-btn g" onclick="addIngredient('frigo','frigInput','g')">+ Ajouter</button>
+    </div>
+    <div id="frigo-ban-msg" style="display:none;margin:-4px 20px 8px;padding:7px 11px;background:var(--red-50);border:1px solid var(--red-100);border-radius:var(--radius);font-size:12px;color:var(--red-600)"></div>
+    <div class="chips" id="frigo-chips"></div>
+    <div class="dvd"></div>
+    <div class="sp"><div class="section-label">Cuisine du monde</div></div>
+    <div class="sel-info" id="frigo-sel-info">Aucune sélection — toutes les cuisines</div>
+    <div class="country-grid" id="frigo-country-grid"></div>
+    <div class="dvd"></div>
+    <div class="sp"><div class="section-label">Temps de préparation max</div></div>
+    <div class="time-filter" id="frigo-time-filter">
+      <button class="time-btn" onclick="selectTime(this,'frigo','15 min')">≤ 15 min</button>
+      <button class="time-btn sg" onclick="selectTime(this,'frigo','30 min')">≤ 30 min</button>
+      <button class="time-btn" onclick="selectTime(this,'frigo','60 min')">≤ 1h</button>
+      <button class="time-btn" onclick="selectTime(this,'frigo','illimité')">Tout</button>
+    </div>
+    <div class="sp" style="margin-bottom:7px"><div class="section-label">Préférences</div></div>
+    <div class="pref-row">
+      <button class="pref-btn g on" onclick="togglePref(this)">Batch cooking</button>
+      <button class="pref-btn g" onclick="togglePref(this)">Végétarien</button>
+      <button class="pref-btn g" onclick="togglePref(this)">Rapide</button>
+      <button class="pref-btn g" onclick="togglePref(this)">Sans gluten</button>
+    </div>
+    <button class="gen-btn g" id="frigBtn" onclick="generate('frigo')">Générer mes recettes ↗</button>
+    <div class="results" id="frigo-results"></div>
+  </div>
+
+  <!-- SCREEN: KIDS -->
+  <div class="screen" id="screen-kids">
+    <div class="sp" style="margin-bottom:7px"><div class="section-label">Âge de l'enfant</div></div>
+    <div class="age-row">
+      <button class="age-btn sel" onclick="selectAge(this,'2-4 ans')">2–4 ans</button>
+      <button class="age-btn" onclick="selectAge(this,'5-8 ans')">5–8 ans</button>
+      <button class="age-btn" onclick="selectAge(this,'9-12 ans')">9–12 ans</button>
+    </div>
+    <div class="sp"><div class="section-label">Légumes refusés</div></div>
+    <div class="veg-grid" id="veg-grid"></div>
+    <div class="input-row">
+      <input type="text" id="kidsInput" placeholder="Ingrédients disponibles..." onkeydown="if(event.key==='Enter')addIngredient('kids','kidsInput','o')">
+      <button class="add-btn o" onclick="addIngredient('kids','kidsInput','o')">+</button>
+    </div>
+    <div id="kids-ban-msg" style="display:none;margin:-4px 20px 8px;padding:7px 11px;background:var(--red-50);border:1px solid var(--red-100);border-radius:var(--radius);font-size:12px;color:var(--red-600)"></div>
+    <div class="chips" id="kids-chips"></div>
+    <div class="dvd"></div>
+    <div class="sp"><div class="section-label">Cuisine du monde</div></div>
+    <div class="sel-info" id="kids-sel-info">Aucune sélection — toutes les cuisines</div>
+    <div class="country-grid" id="kids-country-grid"></div>
+    <div class="dvd"></div>
+    <div class="sp"><div class="section-label">Temps max</div></div>
+    <div class="time-filter" id="kids-time-filter">
+      <button class="time-btn" onclick="selectTime(this,'kids','15 min')">≤ 15 min</button>
+      <button class="time-btn so" onclick="selectTime(this,'kids','30 min')">≤ 30 min</button>
+      <button class="time-btn" onclick="selectTime(this,'kids','60 min')">≤ 1h</button>
+      <button class="time-btn" onclick="selectTime(this,'kids','illimité')">Tout</button>
+    </div>
+    <div class="sp" style="margin-bottom:7px"><div class="section-label">Techniques cachettes</div></div>
+    <div class="pref-row">
+      <button class="pref-btn o on" onclick="togglePref(this)">Purée cachée</button>
+      <button class="pref-btn o on" onclick="togglePref(this)">Râpé fin</button>
+      <button class="pref-btn o" onclick="togglePref(this)">Muffins</button>
+      <button class="pref-btn o" onclick="togglePref(this)">Smoothie</button>
+    </div>
+    <button class="gen-btn o" id="kidsBtn" onclick="generate('kids')">Générer recettes enfant ↗</button>
+    <div class="results" id="kids-results"></div>
+  </div>
+
+  <!-- SCREEN: REGIME -->
+  <div class="screen" id="screen-regime">
+    <div class="sp" style="margin-bottom:7px"><div class="section-label">Régime alimentaire</div></div>
+    <div class="regime-grid">
+      <div class="regime-card sel" onclick="selectRegime(this,'diabétique')"><div class="regime-icon">🩺</div><div class="regime-name">Diabétique</div><div class="regime-tag">IG bas, sans sucre</div></div>
+      <div class="regime-card" onclick="selectRegime(this,'sans gluten')"><div class="regime-icon">🌾</div><div class="regime-name">Sans gluten</div><div class="regime-tag">Cœliaque</div></div>
+      <div class="regime-card" onclick="selectRegime(this,'végétalien')"><div class="regime-icon">🌱</div><div class="regime-name">Végétalien</div><div class="regime-tag">100% végétal</div></div>
+      <div class="regime-card" onclick="selectRegime(this,'sans lactose')"><div class="regime-icon">🥛</div><div class="regime-name">Sans lactose</div><div class="regime-tag">Intolérance</div></div>
+      <div class="regime-card" onclick="selectRegime(this,'hypertension')"><div class="regime-icon">❤️</div><div class="regime-name">Hypertension</div><div class="regime-tag">Faible en sel</div></div>
+      <div class="regime-card" onclick="selectRegime(this,'rénal')"><div class="regime-icon">🏥</div><div class="regime-name">Rénal</div><div class="regime-tag">Faible potassium</div></div>
+    </div>
+    <div class="input-row">
+      <input type="text" id="regInput" placeholder="Ingrédients disponibles..." onkeydown="if(event.key==='Enter')addIngredient('regime','regInput','b')">
+      <button class="add-btn b" onclick="addIngredient('regime','regInput','b')">+</button>
+    </div>
+    <div id="regime-ban-msg" style="display:none;margin:-4px 20px 8px;padding:7px 11px;background:var(--red-50);border:1px solid var(--red-100);border-radius:var(--radius);font-size:12px;color:var(--red-600)"></div>
+    <div class="chips" id="regime-chips"></div>
+    <div class="dvd"></div>
+    <div class="sp"><div class="section-label">Cuisine du monde</div></div>
+    <div class="sel-info" id="regime-sel-info">Aucune sélection — toutes les cuisines</div>
+    <div class="country-grid" id="regime-country-grid"></div>
+    <div class="dvd"></div>
+    <div class="sp"><div class="section-label">Temps max</div></div>
+    <div class="time-filter" id="regime-time-filter">
+      <button class="time-btn" onclick="selectTime(this,'regime','15 min')">≤ 15 min</button>
+      <button class="time-btn" onclick="selectTime(this,'regime','30 min')">≤ 30 min</button>
+      <button class="time-btn sb" onclick="selectTime(this,'regime','60 min')">≤ 1h</button>
+      <button class="time-btn" onclick="selectTime(this,'regime','illimité')">Tout</button>
+    </div>
+    <button class="gen-btn b" id="regBtn" onclick="generate('regime')">Générer recettes adaptées ↗</button>
+    <div class="results" id="regime-results"></div>
+  </div>
+
+  <!-- SCREEN: FAVORIS -->
+  <div class="screen" id="screen-favs">
+    <div class="stats-row" id="fav-stats"></div>
+    <div class="sp"><div class="section-label">Recettes sauvegardées</div></div>
+    <div class="fav-list" id="fav-list"></div>
+  </div>
+
+  <!-- SCREEN: PLANNING -->
+  <div class="screen" id="screen-plan">
+    <div class="plan-actions">
+      <button class="plan-action-btn" onclick="autoPlan()">Remplir automatiquement ↗</button>
+      <button class="plan-action-btn" onclick="clearPlan()">Tout effacer</button>
+    </div>
+    <div class="plan-week" id="plan-week"></div>
+    <div id="assign-modal-container"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-item active-g" onclick="switchScreen('frigo',this,'active-g')" id="nav-frigo">
+      <div class="nav-icon">🥦</div><span class="nav-label">Frigo</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('kids',this,'active-o')" id="nav-kids">
+      <div class="nav-icon">🧒</div><span class="nav-label">Kids</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('regime',this,'active-b')" id="nav-regime">
+      <div class="nav-icon">🩺</div><span class="nav-label">Régime</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('favs',this,'active-r')" id="nav-favs">
+      <div class="nav-icon">❤️</div><span class="nav-label">Favoris</span>
+    </button>
+    <button class="nav-item" onclick="switchScreen('plan',this,'active-p')" id="nav-plan">
+      <div class="nav-icon">📅</div><span class="nav-label">Planning</span>
+    </button>
+  </div>
+
+  <!-- MODALS CONTAINERS -->
+  <div id="lang-modal-container"></div>
+  <div id="video-modal-container"></div>
+</div>
+
+<script>
+// ============================================================
+// CONSTANTS
+// ============================================================
+const SCREEN_META = {
+  frigo: { icon:'🥦', bg:'var(--green-50)', title:'Mon frigo', sub:'Cuisines du monde · Audio · Vidéo' },
+  kids:  { icon:'🧒', bg:'var(--amber-50)', title:'Plats kids', sub:'Légumes cachés · Audio · Vidéo' },
+  regime:{ icon:'🩺', bg:'var(--blue-50)',  title:'Régimes spéciaux', sub:'Santé · Monde · Audio' },
+  favs:  { icon:'❤️', bg:'var(--red-50)',   title:'Mes favoris', sub:'Recettes sauvegardées' },
+  plan:  { icon:'📅', bg:'var(--purple-50)',title:'Planning semaine', sub:'Organise tes repas' },
+};
+
+const COUNTRIES = [
+  {flag:'🇫🇷',name:'France'},{flag:'🇮🇹',name:'Italie'},{flag:'🇲🇦',name:'Maroc'},
+  {flag:'🇹🇳',name:'Tunisie'},{flag:'🇯🇵',name:'Japon'},{flag:'🇮🇳',name:'Inde'},
+  {flag:'🇲🇽',name:'Mexique'},{flag:'🇬🇷',name:'Grèce'},{flag:'🇱🇧',name:'Liban'},
+  {flag:'🇨🇳',name:'Chine'},{flag:'🇹🇭',name:'Thaïlande'},{flag:'🇪🇸',name:'Espagne'},
+  {flag:'🇸🇳',name:'Sénégal'},{flag:'🇩🇿',name:'Algérie'},{flag:'🇹🇷',name:'Turquie'},
+  {flag:'🇻🇳',name:'Vietnam'},{flag:'🇵🇪',name:'Pérou'},{flag:'🇪🇹',name:'Éthiopie'}
+];
+
+const LANGUAGES = [
+  {flag:'🇫🇷',name:'Français',code:'fr'},
+  {flag:'🇬🇧',name:'English',code:'en'},
+  {flag:'🇪🇸',name:'Español',code:'es'},
+  {flag:'🇩🇪',name:'Deutsch',code:'de'},
+  {flag:'🇮🇹',name:'Italiano',code:'it'},
+  {flag:'🇵🇹',name:'Português',code:'pt'},
+  {flag:'🇸🇦',name:'العربية',code:'ar'},
+  {flag:'🇨🇳',name:'中文',code:'zh'},
+  {flag:'🇯🇵',name:'日本語',code:'ja'},
+  {flag:'🇷🇺',name:'Русский',code:'ru'},
+  {flag:'🇳🇱',name:'Nederlands',code:'nl'},
+  {flag:'🇹🇷',name:'Türkçe',code:'tr'},
+];
+
+const DAYS  = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+const MEALS = ['Matin','Midi','Soir'];
+const VEGGIES = ['Brocoli','Courgette','Épinards','Carottes','Poivron','Betterave','Champignon','Chou','Céleri','Aubergine','Poireau','Haricots'];
+
+// ============================================================
+// STATE
+// ============================================================
+let currentLang = { flag:'🇫🇷', name:'Français', code:'fr' };
+let ingredients = {
+  frigo: ['Carottes','Œufs','Lentilles','Riz','Épinards'],
+  kids:  ['Pâtes','Tomates','Fromage'],
+  regime:['Lentilles','Quinoa','Courgette','Poulet']
+};
+let selectedCountries = { frigo:[], kids:[], regime:[] };
+let selectedTime = { frigo:'30 min', kids:'30 min', regime:'60 min' };
+let rejectedVeg = [];
+let currentAge = '2-4 ans';
+let currentRegime = 'diabétique';
+let favorites = [];
+let plan = {};
+let assigningFav = null;
+let favCounter = 0;
+let audioInterval = null;
+let audioSecs = 0;
+let audioTotal = 120;
+let isAudioPlaying = false;
+let currentAudioName = '';
+
+DAYS.forEach(d => { plan[d] = {}; MEALS.forEach(m => { plan[d][m] = null; }); });
+
+// ============================================================
+// CLOCK
+// ============================================================
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clockTime').textContent = h + ':' + m;
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ============================================================
+// SCREEN SWITCHING
+// ============================================================
+function switchScreen(name, btn, activeClass) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(b => {
+    b.classList.remove('active-g','active-o','active-b','active-r','active-p');
+  });
+  btn.classList.add(activeClass);
+  const m = SCREEN_META[name];
+  document.getElementById('appIcon').style.background = m.bg;
+  document.getElementById('appIcon').textContent = m.icon;
+  document.getElementById('appTitle').textContent = m.title;
+  document.getElementById('appSub').textContent = m.sub;
+  if (name === 'favs') renderFavorites();
+  if (name === 'plan') renderPlan();
+}
+
+// ============================================================
+// LANGUAGE
+// ============================================================
+function openLangModal() {
+  let html = LANGUAGES.map(l => `
+    <button class="lang-btn-item${l.code === currentLang.code ? ' sel' : ''}" onclick="selectLanguage('${l.code}','${l.flag}','${l.name}')">
+      <span class="lf">${l.flag}</span><span class="ln">${l.name}</span>
+    </button>`).join('');
+  document.getElementById('lang-modal-container').innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-title">Choisir la langue</div>
+        <div class="modal-sub">Les recettes seront générées dans cette langue</div>
+        <div class="lang-grid">${html}</div>
+        <button class="modal-cancel" onclick="closeLangModal()">Fermer</button>
+      </div>
+    </div>`;
+}
+function selectLanguage(code, flag, name) {
+  currentLang = { code, flag, name };
+  document.getElementById('langFlag').textContent = flag;
+  document.getElementById('langName').textContent = name;
+  closeLangModal();
+}
+function closeLangModal() { document.getElementById('lang-modal-container').innerHTML = ''; }
+
+// ============================================================
+// COUNTRIES
+// ============================================================
+function buildCountryGrid(screen) {
+  const selClass = { frigo:'sg', kids:'so', regime:'sb' }[screen];
+  const grid = document.getElementById(screen + '-country-grid');
+  grid.innerHTML = '';
+  COUNTRIES.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'country-btn' + (selectedCountries[screen].includes(c.name) ? ' ' + selClass : '');
+    btn.innerHTML = `<span class="country-flag">${c.flag}</span><span class="country-name">${c.name}</span>`;
+    btn.onclick = () => {
+      const idx = selectedCountries[screen].indexOf(c.name);
+      if (idx >= 0) selectedCountries[screen].splice(idx, 1);
+      else selectedCountries[screen].push(c.name);
+      btn.classList.toggle(selClass);
+      updateSelInfo(screen);
+    };
+    grid.appendChild(btn);
+  });
+}
+function updateSelInfo(screen) {
+  const sel = selectedCountries[screen];
+  const el = document.getElementById(screen + '-sel-info');
+  if (!sel.length) { el.textContent = 'Aucune sélection — toutes les cuisines'; return; }
+  el.innerHTML = `<span>${sel.length}</span> cuisine${sel.length > 1 ? 's' : ''} sélectionnée${sel.length > 1 ? 's' : ''} : ${sel.slice(0,3).join(', ')}${sel.length > 3 ? '…' : ''}`;
+}
+
+// ============================================================
+// TIME FILTER
+// ============================================================
+function selectTime(el, screen, val) {
+  selectedTime[screen] = val;
+  const selClass = { frigo:'sg', kids:'so', regime:'sb' }[screen];
+  document.querySelectorAll('#' + screen + '-time-filter .time-btn').forEach(b => b.classList.remove('sg','so','sb'));
+  el.classList.add(selClass);
+}
+
+// ============================================================
+// PREFS & VEG & AGE & REGIME
+// ============================================================
+function togglePref(el) { el.classList.toggle('on'); }
+function selectAge(el, val) {
+  currentAge = val;
+  document.querySelectorAll('.age-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function selectRegime(el, val) {
+  currentRegime = val;
+  document.querySelectorAll('.regime-card').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+function buildVegGrid() {
+  const grid = document.getElementById('veg-grid');
+  grid.innerHTML = '';
+  VEGGIES.forEach(v => {
+    const btn = document.createElement('button');
+    btn.className = 'veg-btn' + (rejectedVeg.includes(v) ? ' sel' : '');
+    btn.textContent = v;
+    btn.onclick = () => {
+      if (rejectedVeg.includes(v)) rejectedVeg = rejectedVeg.filter(x => x !== v);
+      else rejectedVeg.push(v);
+      btn.classList.toggle('sel');
+    };
+    grid.appendChild(btn);
+  });
+}
+
+// ============================================================
+// INGREDIENTS
+// ============================================================
+const BANNED_INGREDIENTS = [
+  'porc','cochon','jambon','lardons','lardon','bacon','saucisson','chorizo',
+  'boudin','rillettes','rillette','pancetta','prosciutto','coppa','mortadelle',
+  'andouille','andouillette','pâté de porc','saindoux','lard','travers',
+  'côtelette de porc','escalope de porc','filet de porc','épaule de porc',
+  'vin','bière','alcool','cidre','cognac','rhum','vodka','whisky','whiskey',
+  'champagne','prosecco','porto','marsala','calvados','armagnac','gin','tequila',
+  'sake','mirin','liqueur','amaretto','kirsch','cointreau','pastis','absinthe',
+  'vermouth','muscat','sherry','xérès','eau de vie'
+];
+
+function isBanned(name) {
+  const n = name.toLowerCase().trim();
+  return BANNED_INGREDIENTS.some(b => n.includes(b));
+}
+
+function addIngredient(key, inputId, color) {
+  const inp = document.getElementById(inputId);
+  const val = inp.value.trim();
+  if (!val) return;
+  const blocked = [];
+  val.split(',').forEach(s => {
+    const n = s.trim();
+    if (!n) return;
+    if (isBanned(n)) {
+      blocked.push(n);
+    } else {
+      ingredients[key].push(n.charAt(0).toUpperCase() + n.slice(1));
+    }
+  });
+  inp.value = '';
+  if (blocked.length) {
+    const msg = document.getElementById(key + '-ban-msg');
+    if (msg) {
+      msg.textContent = '🚫 Ingrédient non autorisé : ' + blocked.join(', ');
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    }
+  }
+  renderChips(key, color);
+  document.getElementById(key + '-results').innerHTML = '';
+}
+function removeIngredient(key, i, color) {
+  ingredients[key].splice(i, 1);
+  renderChips(key, color);
+}
+function renderChips(key, color) {
+  const container = document.getElementById(key + '-chips');
+  container.innerHTML = '';
+  ingredients[key].forEach((v, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'chip ' + color;
+    chip.innerHTML = v + ` <button class="chip-x" onclick="removeIngredient('${key}',${i},'${color}')">✕</button>`;
+    container.appendChild(chip);
+  });
+}
+
+// ============================================================
+// GET PREFS
+// ============================================================
+function getPrefs(screen) {
+  const p = [];
+  document.querySelectorAll('#screen-' + screen + ' .pref-btn.on').forEach(b => p.push(b.textContent));
+  return p;
+}
+
+// ============================================================
+// GENERATE RECIPES (Claude API)
+// ============================================================
+async function generate(screen) {
+  const btnId = { frigo:'frigBtn', kids:'kidsBtn', regime:'regBtn' }[screen];
+  const resId = screen + '-results';
+  const color = { frigo:'g', kids:'o', regime:'b' }[screen];
+  const btn = document.getElementById(btnId);
+  btn.disabled = true;
+  btn.textContent = 'Génération en cours...';
+  document.getElementById(resId).innerHTML = `
+    <div class="loading-box">
+      <div class="loading-dots">
+        <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
+      </div>
+      L'IA analyse tes ingrédients...
+    </div>`;
+
+  const paysList = selectedCountries[screen];
+  const tmax = selectedTime[screen];
+  const lang = currentLang.name;
+
+  // Build strict country instruction
+  let cuisineInstruction = '';
+  let examplesJSON = [];
+  if (paysList.length > 0) {
+    const paysExamples = paysList.map(p => {
+      const found = COUNTRIES.find(c => c.name === p);
+      return { pays: p, flag: found ? found.flag : '🌍' };
+    });
+    cuisineInstruction = `\n\nPAYS OBLIGATOIRE : Tu dois générer des recettes UNIQUEMENT de la cuisine de : ${paysList.join(', ')}.\nChaque recette DOIT avoir "pays" égal à l'un de ces pays : ${paysList.join(', ')}.\nIl est INTERDIT de proposer une recette d'un autre pays.\nSi tu ne connais pas assez de recettes pour ces pays avec ces ingrédients, adapte les ingrédients disponibles à la cuisine ${paysList.join('/')} — ne change JAMAIS le pays.`;
+    examplesJSON = paysExamples.map(p => `{"nom":"recette typique de ${p.pays}","pays":"${p.pays}","flag":"${p.flag}","description":"...","temps_prep":"5 min","temps_cuisson":"10 min","temps_total":"15 min","portions":4,"difficulte":"Facile","ingredients_dispo":[],"ingredients_manquants":[],"match":90}`);
+  } else {
+    cuisineInstruction = '\n\nCuisine : libre, toutes les cuisines du monde sont acceptées.';
+    examplesJSON = [`{"nom":"...","pays":"France","flag":"🇫🇷","description":"...","temps_prep":"5 min","temps_cuisson":"10 min","temps_total":"15 min","portions":4,"difficulte":"Facile","ingredients_dispo":[],"ingredients_manquants":[],"match":90}`];
+  }
+
+  const timeInstruction = tmax !== 'illimité'
+    ? `\n\nTEMPS MAXIMUM : Le temps_total de chaque recette doit être INFÉRIEUR ou ÉGAL à ${tmax}. Aucune exception.`
+    : '';
+
+  const halalInstruction = '\n\nINTERDIT ABSOLU : porc, jambon, lardons, bacon, saucisson, chorizo, boudin, rillettes, pancetta + tout alcool (vin, bière, cidre, cognac, rhum, sake, mirin...). Aucune recette ne doit contenir ces ingrédients.';
+
+  const jsonExample = `[${examplesJSON[0]}]`;
+
+  let prompt = '';
+  if (screen === 'frigo') {
+    prompt = `Tu es un chef cuisinier.${cuisineInstruction}${timeInstruction}${halalInstruction}
+
+Langue de réponse : ${lang}.
+Ingrédients disponibles : ${ingredients.frigo.join(', ')}.
+Préférences : ${getPrefs('frigo').join(', ') || 'aucune'}.
+
+Génère exactement 3 recettes en respectant TOUS les critères ci-dessus.
+Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans markdown :
+${jsonExample}`;
+  } else if (screen === 'kids') {
+    const kidsExample = examplesJSON[0].replace('"ingredients_manquants":[]', '"legume_cache":"...","astuce_parent":"...","ingredients_dispo":[],"ingredients_manquants":[]');
+    prompt = `Tu es un chef cuisine enfant (${currentAge}).${cuisineInstruction}${timeInstruction}${halalInstruction}
+
+Langue de réponse : ${lang}.
+Ingrédients disponibles : ${ingredients.kids.join(', ')}.
+Légumes refusés par l'enfant : ${rejectedVeg.join(', ') || 'aucun'}.
+Techniques pour cacher les légumes : ${getPrefs('kids').join(', ') || 'aucune'}.
+
+Génère exactement 3 recettes kids avec légumes cachés, en respectant TOUS les critères.
+Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans markdown :
+[${kidsExample}]`;
+  } else {
+    const regimeExample = examplesJSON[0].replace('"ingredients_manquants":[]', '"info_nutritionnelle":"...","ingredients_dispo":[],"ingredients_manquants":[]');
+    prompt = `Tu es un diététicien spécialisé en régime ${currentRegime}.${cuisineInstruction}${timeInstruction}${halalInstruction}
+
+Langue de réponse : ${lang}.
+Ingrédients disponibles : ${ingredients.regime.join(', ')}.
+
+Génère exactement 3 recettes adaptées au régime ${currentRegime}, en respectant TOUS les critères.
+Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans markdown :
+[${regimeExample}]`;
+  }
+
+  try {
+    const response = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1400,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await response.json();
+    let text = data.content.map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
+    const recipes = JSON.parse(text);
+    renderResults(recipes, resId, color, screen);
+  } catch (e) {
+    const smartFallback = buildSmartFallback(screen, paysList, tmax);
+    document.getElementById(resId).innerHTML = `
+      <div style="margin-bottom:10px;padding:10px 12px;background:var(--red-50);border:1px solid var(--red-100);border-radius:var(--radius);font-size:12px;color:var(--red-600)">
+        ⚠️ Connexion à l'IA impossible (clé API manquante). Voici des recettes de démonstration correspondant à ta sélection.
+      </div>`;
+    renderResults(smartFallback, resId, color, screen);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = screen === 'frigo' ? 'Générer mes recettes ↗'
+      : screen === 'kids' ? 'Générer recettes enfant ↗'
+      : 'Générer recettes adaptées ↗';
+  }
+}
+
+// ============================================================
+// RENDER RECIPES
+// ============================================================
+function renderResults(recipes, resId, color, screen) {
+  const div = document.getElementById(resId);
+  if (!recipes || !recipes.length) {
+    div.innerHTML = '<div class="loading-box">Aucune recette trouvée. Essaie d\'autres ingrédients.</div>';
+    return;
+  }
+  div.innerHTML = '';
+  recipes.forEach((r, i) => {
+    const isSaved = favorites.find(f => f.nom === r.nom);
+    const flag = r.flag || '🌍';
+    const pays = r.pays || 'International';
+    const missing = r.ingredients_manquants && r.ingredients_manquants.length
+      ? `<div class="recipe-missing">Il manque : <strong>${r.ingredients_manquants.join(', ')}</strong></div>` : '';
+    let extra = '';
+    if (screen === 'kids' && r.legume_cache) extra = `<div class="recipe-extra">🌿 Astuce : ${r.legume_cache}</div>`;
+    if (screen === 'regime' && r.info_nutritionnelle) extra = `<div class="recipe-extra">📊 Nutrition : ${r.info_nutritionnelle}</div>`;
+    const audioText = `${r.nom}. Cuisine ${pays}. ${r.description}. Préparation : ${r.temps_prep}. Cuisson : ${r.temps_cuisson}. Difficulté : ${r.difficulte}. ${r.portions} portions.`;
+    const uid = 'rc' + Date.now() + i;
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+    card.innerHTML = `
+      <div class="recipe-top">
+        <div class="recipe-name">${r.nom}</div>
+        <div class="recipe-actions">
+          <div class="match-badge ${color}">${r.match}%</div>
+          <button class="fav-btn${isSaved ? ' saved' : ''}" id="${uid}"
+            onclick="toggleFavorite(this,'${esc(r.nom)}','${pays}','${flag}','${r.temps_total || ''}','${r.portions || 4}','${color}','${screen}')">♥</button>
+        </div>
+      </div>
+      <div class="recipe-origin"><span>${flag}</span> Cuisine ${pays}</div>
+      <div class="recipe-times">
+        <div class="time-pill">Prép <span>${r.temps_prep || '—'}</span></div>
+        <div class="time-pill">Cuisson <span>${r.temps_cuisson || '—'}</span></div>
+        <div class="time-pill">Total <span>${r.temps_total || '—'}</span></div>
+      </div>
+      <div class="recipe-desc">${r.description}</div>
+      <div class="recipe-meta">
+        <div class="recipe-meta-item">Portions <b>${r.portions}</b></div>
+        <div class="recipe-meta-item">Niveau <b>${r.difficulte}</b></div>
+        <div class="recipe-meta-item">Langue <b>${currentLang.flag}</b></div>
+      </div>
+      ${extra}${missing}
+      <div class="recipe-media">
+        <button class="audio-listen-btn" id="ab-${uid}" onclick="playRecipeAudio('${esc(audioText)}','${esc(r.nom)}','ab-${uid}')">
+          🔊 Écouter
+        </button>
+        <button class="video-open-btn" onclick="openVideoModal('${esc(r.nom)}','${pays}','${flag}')">
+          ▶ Vidéo
+        </button>
+      </div>
+      <button class="recipe-full-btn" onclick="askFullRecipe('${esc(r.nom)}','${pays}')">Voir la recette complète ↗</button>`;
+    div.appendChild(card);
+  });
+}
+
+function esc(s) { return s.replace(/'/g, "\\'").replace(/"/g, '\\"').substring(0, 120); }
+
+function askFullRecipe(nom, pays) {
+  alert(`Pour obtenir la recette complète de "${nom}" (cuisine ${pays}), utilise un assistant IA avec cette question :\n\n"Donne-moi la recette complète étape par étape en ${currentLang.name} pour : ${nom}, cuisine ${pays}, style batch cooking."`);
+}
+
+// ============================================================
+// AUDIO
+// ============================================================
+function playRecipeAudio(text, nom, btnId) {
+  if (typeof speechSynthesis === 'undefined') {
+    alert('La synthèse vocale n\'est pas disponible dans votre navigateur.');
+    return;
+  }
+  speechSynthesis.cancel();
+  if (audioInterval) clearInterval(audioInterval);
+
+  const btn = document.getElementById(btnId);
+  document.querySelectorAll('.audio-listen-btn').forEach(b => {
+    b.classList.remove('playing');
+    b.innerHTML = '🔊 Écouter';
+  });
+
+  if (isAudioPlaying && currentAudioName === nom) {
+    isAudioPlaying = false;
+    document.getElementById('audioBar').classList.remove('show','playing');
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = currentLang.code + '-' + currentLang.code.toUpperCase();
+  utterance.rate = 0.9;
+  const voices = speechSynthesis.getVoices();
+  const voice = voices.find(v => v.lang.startsWith(currentLang.code));
+  if (voice) utterance.voice = voice;
+
+  isAudioPlaying = true;
+  currentAudioName = nom;
+  audioSecs = 0;
+  audioTotal = Math.max(20, Math.round(text.split(' ').length / 2.5));
+
+  const bar = document.getElementById('audioBar');
+  bar.classList.add('show','playing');
+  document.getElementById('audioTrack').textContent = nom;
+  document.getElementById('audioPlayBtn').textContent = '⏸';
+  document.getElementById('audioFill').style.width = '0%';
+  document.getElementById('audioTime').textContent = '0:00';
+
+  btn.classList.add('playing');
+  btn.innerHTML = '⏸ En lecture...';
+
+  audioInterval = setInterval(() => {
+    audioSecs++;
+    const pct = Math.min(100, Math.round(audioSecs / audioTotal * 100));
+    document.getElementById('audioFill').style.width = pct + '%';
+    const mins = Math.floor(audioSecs / 60);
+    const secs = audioSecs % 60;
+    document.getElementById('audioTime').textContent = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    if (audioSecs >= audioTotal) { clearInterval(audioInterval); stopAudio(); }
+  }, 1000);
+
+  utterance.onend = () => { clearInterval(audioInterval); stopAudio(); };
+  speechSynthesis.speak(utterance);
+}
+
+function toggleAudioPlayback() {
+  if (speechSynthesis.paused) {
+    speechSynthesis.resume();
+    document.getElementById('audioPlayBtn').textContent = '⏸';
+  } else {
+    speechSynthesis.pause();
+    document.getElementById('audioPlayBtn').textContent = '▶';
+  }
+}
+function stopAudio() {
+  speechSynthesis.cancel();
+  if (audioInterval) clearInterval(audioInterval);
+  isAudioPlaying = false;
+  document.getElementById('audioBar').classList.remove('show','playing');
+  document.getElementById('audioPlayBtn').textContent = '▶';
+  document.querySelectorAll('.audio-listen-btn').forEach(b => {
+    b.classList.remove('playing');
+    b.innerHTML = '🔊 Écouter';
+  });
+}
+
+// ============================================================
+// VIDEO
+// ============================================================
+function openVideoModal(nom, pays, flag) {
+  const searches = [
+    { q: `${nom} recette facile`, ch: 'Chef en cuisine', views: '142K vues' },
+    { q: `${nom} batch cooking`, ch: 'Batch Cooking Pro', views: '87K vues' },
+    { q: `cuisine ${pays} recette traditionnelle`, ch: 'Saveurs du Monde', views: '231K vues' },
+  ];
+  const items = searches.map(s => `
+    <a class="video-item" href="https://www.youtube.com/results?search_query=${encodeURIComponent(s.q)}" target="_blank" rel="noopener">
+      <div class="video-thumb">▶</div>
+      <div class="video-item-info">
+        <div class="video-item-name">${s.q}</div>
+        <div class="video-item-ch">${s.ch} · ${s.views}</div>
+      </div>
+    </a>`).join('');
+
+  document.getElementById('video-modal-container').innerHTML = `
+    <div class="video-overlay">
+      <div class="video-hero">
+        <div class="video-hero-content">
+          <span class="video-hero-flag">${flag}</span>
+          <div class="video-hero-title">${nom}</div>
+          <div class="video-hero-sub">Cuisine ${pays} · Sélectionne une vidéo</div>
+        </div>
+      </div>
+      <div class="video-list">${items}</div>
+      <button class="video-close-btn" onclick="closeVideoModal()">✕ Fermer</button>
+    </div>`;
+}
+function closeVideoModal() { document.getElementById('video-modal-container').innerHTML = ''; }
+
+// ============================================================
+// FAVORITES
+// ============================================================
+function toggleFavorite(btn, nom, pays, flag, temps, portions, color, screen) {
+  const idx = favorites.findIndex(f => f.nom === nom);
+  if (idx >= 0) { favorites.splice(idx, 1); btn.classList.remove('saved'); }
+  else { favorites.push({ id: ++favCounter, nom, pays, flag, temps, portions, color, screen }); btn.classList.add('saved'); }
+}
+
+function renderFavorites() {
+  const cnt = { frigo: 0, kids: 0, regime: 0 };
+  favorites.forEach(f => { if (cnt[f.screen] !== undefined) cnt[f.screen]++; });
+  document.getElementById('fav-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${favorites.length}</div><div class="stat-lbl">Total</div></div>
+    <div class="stat-card"><div class="stat-val">${cnt.kids}</div><div class="stat-lbl">Kids</div></div>
+    <div class="stat-card"><div class="stat-val">${cnt.regime}</div><div class="stat-lbl">Régime</div></div>`;
+
+  const list = document.getElementById('fav-list');
+  if (!favorites.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">♥</div>Aucun favori.<br>Appuie sur ♥ sur une recette pour la sauvegarder.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  favorites.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'fav-item';
+    row.innerHTML = `
+      <div class="fav-flag">${f.flag}</div>
+      <div class="fav-info">
+        <div class="fav-name">${f.nom}</div>
+        <div class="fav-meta">${f.pays} · ${f.temps} · ${f.portions} portions</div>
+      </div>
+      <div class="fav-item-actions">
+        <button class="fav-plan-btn" onclick="openAssignModal(${f.id})">+ Planning</button>
+        <button class="fav-del-btn" onclick="deleteFav(${f.id})">✕</button>
+      </div>`;
+    list.appendChild(row);
+  });
+}
+function deleteFav(id) { favorites = favorites.filter(f => f.id !== id); renderFavorites(); }
+
+// ============================================================
+// PLANNING
+// ============================================================
+function openAssignModal(favId) {
+  assigningFav = favorites.find(f => f.id === favId);
+  if (!assigningFav) return;
+  let opts = '';
+  DAYS.forEach(d => {
+    MEALS.forEach(m => {
+      if (!plan[d][m]) opts += `<button class="assign-opt" onclick="assignToSlot('${d}','${m}')">${d}<br><span style="font-size:9px;color:var(--text3)">${m}</span></button>`;
+    });
+  });
+  document.getElementById('assign-modal-container').innerHTML = `
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <div class="modal-title">${assigningFav.flag} Placer au planning</div>
+        <div class="modal-sub">${assigningFav.nom.substring(0,32)}${assigningFav.nom.length > 32 ? '...' : ''}</div>
+        <div class="assign-grid">${opts || '<div style="font-size:12px;color:var(--text3);grid-column:1/-1;text-align:center;padding:12px">Tous les créneaux sont occupés.</div>'}</div>
+        <button class="modal-cancel" onclick="closeAssignModal()">Annuler</button>
+      </div>
+    </div>`;
+}
+function assignToSlot(day, meal) {
+  if (!assigningFav) return;
+  plan[day][meal] = { nom: assigningFav.nom, flag: assigningFav.flag, color: assigningFav.color, screen: assigningFav.screen };
+  closeAssignModal();
+  renderPlan();
+}
+function closeAssignModal() { document.getElementById('assign-modal-container').innerHTML = ''; assigningFav = null; }
+
+function autoPlan() {
+  if (!favorites.length) {
+    alert('Ajoute d\'abord des recettes en favoris pour remplir le planning automatiquement !');
+    return;
+  }
+  let fi = 0;
+  DAYS.forEach(d => {
+    MEALS.forEach(m => {
+      if (!plan[d][m] && fi < favorites.length) {
+        plan[d][m] = { nom: favorites[fi].nom, flag: favorites[fi].flag, color: favorites[fi].color, screen: favorites[fi].screen };
+        fi = (fi + 1) % favorites.length;
+      }
+    });
+  });
+  renderPlan();
+}
+function clearPlan() {
+  DAYS.forEach(d => { MEALS.forEach(m => { plan[d][m] = null; }); });
+  renderPlan();
+}
+
+function renderPlan() {
+  const week = document.getElementById('plan-week');
+  week.innerHTML = '';
+  DAYS.forEach(d => {
+    const filled = MEALS.filter(m => plan[d][m]).length;
+    let mealsHtml = '';
+    MEALS.forEach(m => {
+      const slot = plan[d][m];
+      const pillClass = slot ? 'meal-pill ' + (slot.screen === 'kids' ? 'has-o' : slot.screen === 'regime' ? 'has-b' : 'has-g') : 'meal-pill';
+      const pillText = slot ? (slot.flag + ' ' + slot.nom).substring(0, 28) : 'Ajouter un repas...';
+      const removeBtn = slot ? `<button class="meal-remove-btn" onclick="plan['${d}']['${m}']=null;renderPlan()" title="Retirer">✕</button>` : '';
+      mealsHtml += `<div class="meal-slot">
+        <div class="meal-label">${m}</div>
+        <button class="${pillClass}">${pillText}</button>
+        ${removeBtn}
+      </div>`;
+    });
+    const dayEl = document.createElement('div');
+    dayEl.className = 'plan-day';
+    dayEl.innerHTML = `
+      <div class="plan-day-header">
+        <div class="plan-day-name">${d}</div>
+        <div class="plan-day-count">${filled}/3 repas</div>
+      </div>
+      <div class="plan-meals">${mealsHtml}</div>`;
+    week.appendChild(dayEl);
+  });
+}
+
+// ============================================================
+// FALLBACK DATA
+// ============================================================
+// Base de recettes de démonstration par pays
+const RECIPE_DB = {
+  'Tunisie': [
+    { nom:'Chakchouka tunisienne', flag:'🇹🇳', description:'Œufs pochés dans une sauce tomate épicée à la harissa. Plat emblématique tunisien prêt en 15 min.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Œufs','Ail'],ingredients_manquants:['Harissa','Poivron'],match:96 },
+    { nom:'Ojja aux œufs', flag:'🇹🇳', description:'Variante douce de la chakchouka avec ail et tomates, parfaite pour le batch.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:3,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Cumin'],match:94 },
+    { nom:'Salade mechouia', flag:'🇹🇳', description:'Salade de tomates et ail grillés, assaisonnée à l\'huile d\'olive. Fraîche et rapide.',temps_prep:'10 min',temps_cuisson:'5 min',temps_total:'15 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Poivron grillé','Harissa'],match:90 },
+    { nom:'Lablabi express', flag:'🇹🇳', description:'Soupe de pois chiches à l\'ail et au cumin, street food tunisien par excellence.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Pois chiches','Cumin','Harissa'],match:82 },
+    { nom:'Fricassé tunisien', flag:'🇹🇳', description:'Sandwich frit tunisien garni d\'œuf dur, tomate et olives. Batch possible.',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Farine','Olives'],match:85 },
+  ],
+  'Maroc': [
+    { nom:'Zaalouk rapide', flag:'🇲🇦', description:'Caviar d\'aubergines à la tomate et à l\'ail, se prépare en 20 min.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Aubergine','Cumin'],match:88 },
+    { nom:'Taktouka marocaine', flag:'🇲🇦', description:'Salade cuite de tomates et poivrons grillés à l\'ail. Idéale en batch.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Poivrons'],match:86 },
+    { nom:'Tagine de lentilles', flag:'🇲🇦', description:'Lentilles mijotées aux épices marocaines, plat de batch par excellence.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:6,difficulte:'Facile',ingredients_dispo:['Lentilles','Ail'],ingredients_manquants:['Cumin','Paprika','Coriandre'],match:84 },
+  ],
+  'Algérie': [
+    { nom:'Cherchem aux pois chiches', flag:'🇩🇿', description:'Soupe épaisse algérienne aux pois chiches, tomates et ail.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:6,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Pois chiches','Ras el hanout'],match:83 },
+    { nom:'Tchakchouka algérienne', flag:'🇩🇿', description:'Version algérienne des œufs en sauce tomate au cumin.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:3,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Cumin','Paprika'],match:92 },
+  ],
+  'France': [
+    { nom:'Ratatouille express', flag:'🇫🇷', description:'Légumes mijotés à la provençale, idéale pour le batch cooking.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:6,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Courgette','Aubergine','Poivron'],match:85 },
+    { nom:'Soupe à l\'ail', flag:'🇫🇷', description:'Soupe rustique à l\'ail et aux œufs, économique et réconfortante.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Ail','Œufs'],ingredients_manquants:['Bouillon','Pain'],match:88 },
+  ],
+  'Italie': [
+    { nom:'Panzanella aux tomates', flag:'🇮🇹', description:'Salade italienne de tomates et pain, parfumée à l\'ail.',temps_prep:'10 min',temps_cuisson:'0 min',temps_total:'10 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Pain rassis','Basilic'],match:90 },
+    { nom:'Bruschetta all\'aglio', flag:'🇮🇹', description:'Toasts à la tomate et à l\'ail. Rapide, savoureux, batch friendly.',temps_prep:'5 min',temps_cuisson:'5 min',temps_total:'10 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Pain','Basilic'],match:92 },
+  ],
+  'Liban': [
+    { nom:'Fatteh aux œufs', flag:'🇱🇧', description:'Plat libanais à base de pain, œufs et tomates au cumin.',temps_prep:'10 min',temps_cuisson:'10 min',temps_total:'20 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Pain pita','Yaourt'],match:87 },
+  ],
+  'Grèce': [
+    { nom:'Strapatsada grecque', flag:'🇬🇷', description:'Œufs brouillés à la tomate et à l\'ail, plat grec traditionnel express.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Feta','Origan'],match:95 },
+  ],
+  'Espagne': [
+    { nom:'Huevos a la flamenca', flag:'🇪🇸', description:'Œufs en sauce tomate à l\'espagnole, cuits au four.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Paprika fumé','Poivron'],match:91 },
+  ],
+  'Inde': [
+    { nom:'Egg masala', flag:'🇮🇳', description:'Œufs durs mijotés dans une sauce tomate aux épices indiennes.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Curcuma','Cumin','Garam masala'],match:89 },
+  ],
+  'Japon': [
+    { nom:'Tamago dofu', flag:'🇯🇵', description:'Flan d\'œufs japonais délicat, servi froid avec bouillon dashi.',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Moyen',ingredients_dispo:['Œufs'],ingredients_manquants:['Dashi','Sauce soja'],match:78 },
+  ],
+  'Mexique': [
+    { nom:'Huevos rancheros', flag:'🇲🇽', description:'Œufs sur sauce tomate et ail épicée, petit-déjeuner mexicain traditionnel.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Tortillas','Piment'],match:93 },
+  ],
+  'Chine': [
+    { nom:'Omelette tomates-œufs', flag:'🇨🇳', description:'Plat familial chinois classique, tomates et œufs sautés. Prêt en 10 min.',temps_prep:'3 min',temps_cuisson:'7 min',temps_total:'10 min',portions:3,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Huile de sésame','Ciboule'],match:97 },
+  ],
+  'Thaïlande': [
+    { nom:'Kai jeow (omelette thaï)', flag:'🇹🇭', description:'Omelette thaïlandaise croustillante à la sauce de poisson et ail.',temps_prep:'3 min',temps_cuisson:'5 min',temps_total:'8 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Ail'],ingredients_manquants:['Sauce de poisson','Piment'],match:91 },
+  ],
+  'Vietnam': [
+    { nom:'Cơm chiên trứng', flag:'🇻🇳', description:'Riz frit aux œufs à la vietnamienne, rapide et savoureux.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:3,difficulte:'Facile',ingredients_dispo:['Œufs','Riz'],ingredients_manquants:['Sauce soja','Ciboule'],match:88 },
+  ],
+  'Sénégal': [
+    { nom:'Yassa aux légumes', flag:'🇸🇳', description:'Sauce oignon-citron sénégalaise aux légumes, batch cooking idéal.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:6,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Oignons','Citron','Moutarde'],match:79 },
+  ],
+  'Pérou': [
+    { nom:'Papas a la huancaína', flag:'🇵🇪', description:'Sauce crémeuse péruvienne sur légumes, épicée et savoureuse.',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Pommes de terre','Fromage frais','Aji amarillo'],match:75 },
+  ],
+  'Éthiopie': [
+    { nom:'Shiro wat', flag:'🇪🇹', description:'Ragoût éthiopien de pois chiches à l\'ail et au berbéré.',temps_prep:'5 min',temps_cuisson:'25 min',temps_total:'30 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Farine de pois chiches','Berbéré'],match:80 },
+  ],
+  'Turquie': [
+    { nom:'Menemen', flag:'🇹🇷', description:'Œufs brouillés turcs aux tomates et poivrons, prêt en 12 min.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Poivron','Paprika'],match:94 },
+  ],
+};
+
+const DEFAULT_RECIPES = {
+  frigo: [
+    { nom:'Chakchouka tunisienne', pays:'Tunisie', flag:'🇹🇳', description:'Œufs pochés dans une sauce tomate épicée à la harissa.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Œufs','Ail'],ingredients_manquants:['Harissa'],match:95 },
+    { nom:'Omelette tomates-œufs', pays:'Chine', flag:'🇨🇳', description:'Plat familial chinois classique, tomates et œufs sautés en 10 min.',temps_prep:'3 min',temps_cuisson:'7 min',temps_total:'10 min',portions:3,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:[],match:90 },
+    { nom:'Huevos rancheros', pays:'Mexique', flag:'🇲🇽', description:'Œufs sur sauce tomate et ail épicée, prêt en 15 min.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Tortillas'],match:88 },
+  ],
+  kids: [
+    { nom:'Omelette roulée aux tomates', pays:'France', flag:'🇫🇷', description:'Omelette douce avec tomates fondantes cachées à l\'intérieur.',temps_prep:'5 min',temps_cuisson:'8 min',temps_total:'13 min',portions:2,difficulte:'Très facile',legume_cache:'Tomates fondues dans l\'omelette',astuce_parent:'Rouler l\'omelette comme une crêpe',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:[],match:92 },
+    { nom:'Œufs cocotte tomates', pays:'France', flag:'🇫🇷', description:'Œufs cuits dans des tomates évidées, recette cute pour les enfants.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Facile',legume_cache:'Tomate utilisée comme cocotte',astuce_parent:'Laisser l\'enfant choisir sa tomate',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Fromage râpé'],match:88 },
+    { nom:'Pain perdu aux tomates', pays:'France', flag:'🇫🇷', description:'Pain trempé dans l\'œuf avec tomates cerises poêlées.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',legume_cache:'Tomates mélangées à l\'œuf',astuce_parent:'Appeler ça "pain magique"',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Pain'],match:85 },
+  ],
+  regime: [
+    { nom:'Chakchouka allégée', pays:'Tunisie', flag:'🇹🇳', description:'Œufs pochés en sauce tomate, faible en glucides et riche en protéines.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 14g · Glucides: 8g · IG bas',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Harissa douce'],match:94 },
+    { nom:'Salade tomates-œufs durs', pays:'France', flag:'🇫🇷', description:'Salade légère et protéinée, idéale pour tous les régimes.',temps_prep:'8 min',temps_cuisson:'10 min',temps_total:'18 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 12g · Lipides: 8g · Sans gluten',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Huile d\'olive','Vinaigre'],match:90 },
+    { nom:'Strapatsada grecque', pays:'Grèce', flag:'🇬🇷', description:'Œufs brouillés à la tomate, riche en protéines, très faible en glucides.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 16g · Glucides: 6g · IG très bas',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Feta','Origan'],match:92 },
+  ]
+};
+
+function buildSmartFallback(screen, paysList, tmax) {
+  const tmaxMin = tmax === '15 min' ? 15 : tmax === '30 min' ? 30 : tmax === '60 min' ? 60 : 999;
+  let pool = [];
+
+  if (paysList && paysList.length > 0) {
+    // Cherche dans la base de recettes pour chaque pays sélectionné
+    paysList.forEach(pays => {
+      if (RECIPE_DB[pays]) {
+        RECIPE_DB[pays].forEach(r => {
+          pool.push({ ...r, pays });
+        });
+      }
+    });
+  }
+
+  // Filtre par temps
+  pool = pool.filter(r => {
+    const total = parseInt(r.temps_total) || 60;
+    return total <= tmaxMin;
+  });
+
+  // Si pas assez, complète avec les defaults
+  if (pool.length < 3) {
+    const defaults = DEFAULT_RECIPES[screen] || DEFAULT_RECIPES.frigo;
+    defaults.forEach(r => {
+      if (!pool.find(p => p.nom === r.nom)) pool.push(r);
+    });
+  }
+
+  // Ajoute info_nutritionnelle ou legume_cache selon screen si manquant
+  return pool.slice(0, 3).map(r => {
+    if (screen === 'kids' && !r.legume_cache) r.legume_cache = 'Légumes incorporés dans la recette';
+    if (screen === 'regime' && !r.info_nutritionnelle) r.info_nutritionnelle = 'Recette équilibrée, adaptable à votre régime';
+    return r;
+  });
+}
+
+function getFallback(screen) {
+  return DEFAULT_RECIPES[screen] || DEFAULT_RECIPES.frigo;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+['frigo','kids','regime'].forEach(s => {
+  renderChips(s, { frigo:'g', kids:'o', regime:'b' }[s]);
+  buildCountryGrid(s);
+});
+buildVegGrid();
+renderPlan();
+</script>
+</body>
+</html>
