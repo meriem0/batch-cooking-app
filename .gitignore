@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Capacitor native platforms (generated — run `npx cap add android/ios` to regenerate)
+android/
+ios/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
