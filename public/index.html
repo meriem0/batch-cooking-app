@@ -2,8 +2,21 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Batch Cooking — Cuisines du Monde</title>
+
+<!-- PWA & Mobile App -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#639922">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Batch Cooking">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+
+<!-- Capacitor config -->
+<script src="/config.js"></script>
+
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -797,7 +810,7 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, san
   }
 
   try {
-    const response = await fetch('/api/generate', {
+    const response = await fetch((window.APP_CONFIG && window.APP_CONFIG.apiUrl) || '/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt })

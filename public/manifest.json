@@ -1,0 +1,26 @@
+{
+  "name": "Batch Cooking — Cuisines du Monde",
+  "short_name": "Batch Cooking",
+  "description": "Générateur de recettes IA pour le batch cooking et la planification des repas",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#639922",
+  "lang": "fr",
+  "categories": ["food", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
