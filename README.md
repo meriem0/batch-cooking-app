@@ -42,18 +42,17 @@ batch-cooking-app/
 3. Laisse tout par défaut, clique **"Deploy"**
 4. Attends 1 minute... 🎉 Ton app est en ligne !
 
-### ÉTAPE 5 — Ajouter ta clé API Claude (IMPORTANT)
-Sans ça, l'IA ne fonctionnera pas.
+### ÉTAPE 5 — Obtenir ta clé API Gemini GRATUITE (IMPORTANT)
 
-1. Va sur **console.anthropic.com**
-2. Crée un compte si tu n'en as pas
-3. Va dans **"API Keys"** → clique **"Create Key"**
-4. Copie la clé (commence par `sk-ant-...`)
+1. Va sur **aistudio.google.com**
+2. Connecte-toi avec ton compte Google
+3. Clique **"Get API Key"** → **"Create API Key"**
+4. Copie la clé (commence par `AIza...`)
 5. Retourne sur **Vercel** → ton projet → onglet **"Settings"**
 6. Clique **"Environment Variables"**
 7. Ajoute :
-   - **Name** : `ANTHROPIC_API_KEY`
-   - **Value** : colle ta clé `sk-ant-...`
+   - **Name** : `GEMINI_API_KEY`
+   - **Value** : colle ta clé `AIza...`
 8. Clique **"Save"**
 9. Va dans **"Deployments"** → clique les **3 points** → **"Redeploy"**
 
@@ -69,9 +68,9 @@ Ton app est accessible à l'adresse :
 |---------|------|
 | GitHub | Gratuit |
 | Vercel | Gratuit (jusqu'à 100 000 requêtes/mois) |
-| API Claude | ~0.003€ par génération de recettes |
+| Gemini API | **100% GRATUIT** (1500 requêtes/jour) |
 
-Pour 1000 utilisateurs qui génèrent 3 recettes chacun → environ **9€** d'API.
+Pour une application publique avec beaucoup d'utilisateurs, Gemini Flash est gratuit jusqu'à **1500 générations de recettes par jour**. Au-delà, c'est environ 0.00007€ par requête — quasi nul.
 
 ---
 

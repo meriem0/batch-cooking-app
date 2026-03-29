@@ -800,14 +800,11 @@ Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, san
     const response = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1400,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ prompt })
     });
     const data = await response.json();
-    let text = data.content.map(b => b.text || '').join('').replace(/```json|```/g, '').trim();
+    if (data.error) throw new Error(data.error);
+    let text = (data.text || '').replace(/```json|```/g, '').trim();
     const recipes = JSON.parse(text);
     renderResults(recipes, resId, color, screen);
   } catch (e) {
