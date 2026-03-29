@@ -730,7 +730,7 @@ function getPrefs(screen) {
 }
 
 // ============================================================
-// GENERATE RECIPES (Claude API)
+// GENERATE RECIPES (local database)
 // ============================================================
 async function generate(screen) {
   const btnId = { frigo:'frigBtn', kids:'kidsBtn', regime:'regBtn' }[screen];
@@ -738,101 +738,28 @@ async function generate(screen) {
   const color = { frigo:'g', kids:'o', regime:'b' }[screen];
   const btn = document.getElementById(btnId);
   btn.disabled = true;
-  btn.textContent = 'Génération en cours...';
+  btn.textContent = 'Recherche en cours...';
   document.getElementById(resId).innerHTML = `
     <div class="loading-box">
       <div class="loading-dots">
         <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
       </div>
-      L'IA analyse tes ingrédients...
+      Recherche de recettes...
     </div>`;
 
   const paysList = selectedCountries[screen];
   const tmax = selectedTime[screen];
-  const lang = currentLang.name;
+  const userIngredients = ingredients[screen] || [];
 
-  // Build strict country instruction
-  let cuisineInstruction = '';
-  let examplesJSON = [];
-  if (paysList.length > 0) {
-    const paysExamples = paysList.map(p => {
-      const found = COUNTRIES.find(c => c.name === p);
-      return { pays: p, flag: found ? found.flag : '🌍' };
-    });
-    cuisineInstruction = `\n\nPAYS OBLIGATOIRE : Tu dois générer des recettes UNIQUEMENT de la cuisine de : ${paysList.join(', ')}.\nChaque recette DOIT avoir "pays" égal à l'un de ces pays : ${paysList.join(', ')}.\nIl est INTERDIT de proposer une recette d'un autre pays.\nSi tu ne connais pas assez de recettes pour ces pays avec ces ingrédients, adapte les ingrédients disponibles à la cuisine ${paysList.join('/')} — ne change JAMAIS le pays.`;
-    examplesJSON = paysExamples.map(p => `{"nom":"recette typique de ${p.pays}","pays":"${p.pays}","flag":"${p.flag}","description":"...","temps_prep":"5 min","temps_cuisson":"10 min","temps_total":"15 min","portions":4,"difficulte":"Facile","ingredients_dispo":[],"ingredients_manquants":[],"match":90}`);
-  } else {
-    cuisineInstruction = '\n\nCuisine : libre, toutes les cuisines du monde sont acceptées.';
-    examplesJSON = [`{"nom":"...","pays":"France","flag":"🇫🇷","description":"...","temps_prep":"5 min","temps_cuisson":"10 min","temps_total":"15 min","portions":4,"difficulte":"Facile","ingredients_dispo":[],"ingredients_manquants":[],"match":90}`];
-  }
+  await new Promise(r => setTimeout(r, 350));
 
-  const timeInstruction = tmax !== 'illimité'
-    ? `\n\nTEMPS MAXIMUM : Le temps_total de chaque recette doit être INFÉRIEUR ou ÉGAL à ${tmax}. Aucune exception.`
-    : '';
+  const results = buildLocalRecipes(screen, paysList, tmax, userIngredients);
+  renderResults(results, resId, color, screen);
 
-  const halalInstruction = '\n\nINTERDIT ABSOLU : porc, jambon, lardons, bacon, saucisson, chorizo, boudin, rillettes, pancetta + tout alcool (vin, bière, cidre, cognac, rhum, sake, mirin...). Aucune recette ne doit contenir ces ingrédients.';
-
-  const jsonExample = `[${examplesJSON[0]}]`;
-
-  let prompt = '';
-  if (screen === 'frigo') {
-    prompt = `Tu es un chef cuisinier.${cuisineInstruction}${timeInstruction}${halalInstruction}
-
-Langue de réponse : ${lang}.
-Ingrédients disponibles : ${ingredients.frigo.join(', ')}.
-Préférences : ${getPrefs('frigo').join(', ') || 'aucune'}.
-
-Génère exactement 3 recettes en respectant TOUS les critères ci-dessus.
-Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans markdown :
-${jsonExample}`;
-  } else if (screen === 'kids') {
-    const kidsExample = examplesJSON[0].replace('"ingredients_manquants":[]', '"legume_cache":"...","astuce_parent":"...","ingredients_dispo":[],"ingredients_manquants":[]');
-    prompt = `Tu es un chef cuisine enfant (${currentAge}).${cuisineInstruction}${timeInstruction}${halalInstruction}
-
-Langue de réponse : ${lang}.
-Ingrédients disponibles : ${ingredients.kids.join(', ')}.
-Légumes refusés par l'enfant : ${rejectedVeg.join(', ') || 'aucun'}.
-Techniques pour cacher les légumes : ${getPrefs('kids').join(', ') || 'aucune'}.
-
-Génère exactement 3 recettes kids avec légumes cachés, en respectant TOUS les critères.
-Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans markdown :
-[${kidsExample}]`;
-  } else {
-    const regimeExample = examplesJSON[0].replace('"ingredients_manquants":[]', '"info_nutritionnelle":"...","ingredients_dispo":[],"ingredients_manquants":[]');
-    prompt = `Tu es un diététicien spécialisé en régime ${currentRegime}.${cuisineInstruction}${timeInstruction}${halalInstruction}
-
-Langue de réponse : ${lang}.
-Ingrédients disponibles : ${ingredients.regime.join(', ')}.
-
-Génère exactement 3 recettes adaptées au régime ${currentRegime}, en respectant TOUS les critères.
-Réponds UNIQUEMENT avec un tableau JSON valide, sans texte avant ni après, sans markdown :
-[${regimeExample}]`;
-  }
-
-  try {
-    const response = await fetch((window.APP_CONFIG && window.APP_CONFIG.apiUrl) || '/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt })
-    });
-    const data = await response.json();
-    if (data.error) throw new Error(data.error);
-    let text = (data.text || '').replace(/```json|```/g, '').trim();
-    const recipes = JSON.parse(text);
-    renderResults(recipes, resId, color, screen);
-  } catch (e) {
-    const smartFallback = buildSmartFallback(screen, paysList, tmax);
-    document.getElementById(resId).innerHTML = `
-      <div style="margin-bottom:10px;padding:10px 12px;background:var(--red-50);border:1px solid var(--red-100);border-radius:var(--radius);font-size:12px;color:var(--red-600)">
-        ⚠️ Connexion à l'IA impossible (clé API manquante). Voici des recettes de démonstration correspondant à ta sélection.
-      </div>`;
-    renderResults(smartFallback, resId, color, screen);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = screen === 'frigo' ? 'Générer mes recettes ↗'
-      : screen === 'kids' ? 'Générer recettes enfant ↗'
-      : 'Générer recettes adaptées ↗';
-  }
+  btn.disabled = false;
+  btn.textContent = screen === 'frigo' ? 'Trouver mes recettes ↗'
+    : screen === 'kids' ? 'Trouver recettes enfant ↗'
+    : 'Trouver recettes adaptées ↗';
 }
 
 // ============================================================
@@ -1134,72 +1061,163 @@ function renderPlan() {
 }
 
 // ============================================================
-// FALLBACK DATA
+// RECIPE DATABASES
 // ============================================================
-// Base de recettes de démonstration par pays
+
+// --- MODE FRIGO ---
 const RECIPE_DB = {
   'Tunisie': [
-    { nom:'Chakchouka tunisienne', flag:'🇹🇳', description:'Œufs pochés dans une sauce tomate épicée à la harissa. Plat emblématique tunisien prêt en 15 min.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Œufs','Ail'],ingredients_manquants:['Harissa','Poivron'],match:96 },
+    { nom:'Chakchouka tunisienne', flag:'🇹🇳', description:'Œufs pochés dans une sauce tomate épicée à la harissa.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Œufs','Ail'],ingredients_manquants:['Harissa','Poivron'],match:96 },
     { nom:'Ojja aux œufs', flag:'🇹🇳', description:'Variante douce de la chakchouka avec ail et tomates, parfaite pour le batch.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:3,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Cumin'],match:94 },
-    { nom:'Salade mechouia', flag:'🇹🇳', description:'Salade de tomates et ail grillés, assaisonnée à l\'huile d\'olive. Fraîche et rapide.',temps_prep:'10 min',temps_cuisson:'5 min',temps_total:'15 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Poivron grillé','Harissa'],match:90 },
-    { nom:'Lablabi express', flag:'🇹🇳', description:'Soupe de pois chiches à l\'ail et au cumin, street food tunisien par excellence.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Pois chiches','Cumin','Harissa'],match:82 },
-    { nom:'Fricassé tunisien', flag:'🇹🇳', description:'Sandwich frit tunisien garni d\'œuf dur, tomate et olives. Batch possible.',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Farine','Olives'],match:85 },
+    { nom:'Salade mechouia', flag:'🇹🇳', description:'Salade de tomates et ail grillés, assaisonnée à l\'huile d\'olive.',temps_prep:'10 min',temps_cuisson:'5 min',temps_total:'15 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Poivron grillé','Harissa'],match:90 },
+    { nom:'Lablabi express', flag:'🇹🇳', description:'Soupe de pois chiches à l\'ail et au cumin, street food tunisien.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Pois chiches','Cumin','Harissa'],match:82 },
+    { nom:'Fricassé tunisien', flag:'🇹🇳', description:'Sandwich frit tunisien garni d\'œuf dur, tomate et olives.',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Farine','Olives'],match:85 },
+    { nom:'Couscous aux légumes', flag:'🇹🇳', description:'Couscous végétarien aux sept légumes, plat de batch par excellence.',temps_prep:'15 min',temps_cuisson:'45 min',temps_total:'60 min',portions:6,difficulte:'Moyen',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Semoule','Courgette','Carotte','Navet'],match:78 },
   ],
   'Maroc': [
-    { nom:'Zaalouk rapide', flag:'🇲🇦', description:'Caviar d\'aubergines à la tomate et à l\'ail, se prépare en 20 min.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Aubergine','Cumin'],match:88 },
-    { nom:'Taktouka marocaine', flag:'🇲🇦', description:'Salade cuite de tomates et poivrons grillés à l\'ail. Idéale en batch.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Poivrons'],match:86 },
-    { nom:'Tagine de lentilles', flag:'🇲🇦', description:'Lentilles mijotées aux épices marocaines, plat de batch par excellence.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:6,difficulte:'Facile',ingredients_dispo:['Lentilles','Ail'],ingredients_manquants:['Cumin','Paprika','Coriandre'],match:84 },
+    { nom:'Zaalouk rapide', flag:'🇲🇦', description:'Caviar d\'aubergines à la tomate et à l\'ail.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Aubergine','Cumin'],match:88 },
+    { nom:'Taktouka marocaine', flag:'🇲🇦', description:'Salade cuite de tomates et poivrons grillés à l\'ail.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Poivrons'],match:86 },
+    { nom:'Tagine de lentilles', flag:'🇲🇦', description:'Lentilles mijotées aux épices marocaines, plat de batch.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:6,difficulte:'Facile',ingredients_dispo:['Lentilles','Ail'],ingredients_manquants:['Cumin','Paprika','Coriandre'],match:84 },
+    { nom:'Harira simplifiée', flag:'🇲🇦', description:'Soupe marocaine aux tomates et lentilles, nourrissante.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:6,difficulte:'Facile',ingredients_dispo:['Tomates','Lentilles','Ail'],ingredients_manquants:['Céleri','Coriandre','Cumin'],match:83 },
   ],
   'Algérie': [
     { nom:'Cherchem aux pois chiches', flag:'🇩🇿', description:'Soupe épaisse algérienne aux pois chiches, tomates et ail.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:6,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Pois chiches','Ras el hanout'],match:83 },
     { nom:'Tchakchouka algérienne', flag:'🇩🇿', description:'Version algérienne des œufs en sauce tomate au cumin.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:3,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Cumin','Paprika'],match:92 },
+    { nom:'Chorba frik', flag:'🇩🇿', description:'Soupe algérienne au blé concassé et légumes, idéale en batch.',temps_prep:'10 min',temps_cuisson:'40 min',temps_total:'50 min',portions:6,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Blé concassé','Coriandre'],match:79 },
   ],
   'France': [
     { nom:'Ratatouille express', flag:'🇫🇷', description:'Légumes mijotés à la provençale, idéale pour le batch cooking.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:6,difficulte:'Facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Courgette','Aubergine','Poivron'],match:85 },
     { nom:'Soupe à l\'ail', flag:'🇫🇷', description:'Soupe rustique à l\'ail et aux œufs, économique et réconfortante.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Ail','Œufs'],ingredients_manquants:['Bouillon','Pain'],match:88 },
+    { nom:'Gratin de courgettes', flag:'🇫🇷', description:'Courgettes gratinées au fromage, plat simple et gourmand.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs'],ingredients_manquants:['Courgettes','Fromage râpé','Crème'],match:80 },
+    { nom:'Soupe de lentilles', flag:'🇫🇷', description:'Soupe de lentilles aux carottes et thym, batch cooking idéal.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:6,difficulte:'Facile',ingredients_dispo:['Lentilles'],ingredients_manquants:['Carotte','Thym','Bouillon'],match:82 },
   ],
   'Italie': [
     { nom:'Panzanella aux tomates', flag:'🇮🇹', description:'Salade italienne de tomates et pain, parfumée à l\'ail.',temps_prep:'10 min',temps_cuisson:'0 min',temps_total:'10 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Pain rassis','Basilic'],match:90 },
-    { nom:'Bruschetta all\'aglio', flag:'🇮🇹', description:'Toasts à la tomate et à l\'ail. Rapide, savoureux, batch friendly.',temps_prep:'5 min',temps_cuisson:'5 min',temps_total:'10 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Pain','Basilic'],match:92 },
+    { nom:'Bruschetta all\'aglio', flag:'🇮🇹', description:'Toasts à la tomate et à l\'ail, batch friendly.',temps_prep:'5 min',temps_cuisson:'5 min',temps_total:'10 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Pain','Basilic'],match:92 },
+    { nom:'Pasta e fagioli', flag:'🇮🇹', description:'Pâtes aux haricots blancs, soupe épaisse italienne.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail','Tomates'],ingredients_manquants:['Pâtes','Haricots blancs','Romarin'],match:82 },
+    { nom:'Frittata aux légumes', flag:'🇮🇹', description:'Omelette épaisse italienne aux légumes de saison.',temps_prep:'10 min',temps_cuisson:'20 min',temps_total:'30 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs'],ingredients_manquants:['Courgette','Oignon','Fromage'],match:84 },
   ],
   'Liban': [
     { nom:'Fatteh aux œufs', flag:'🇱🇧', description:'Plat libanais à base de pain, œufs et tomates au cumin.',temps_prep:'10 min',temps_cuisson:'10 min',temps_total:'20 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Pain pita','Yaourt'],match:87 },
+    { nom:'Mujaddara', flag:'🇱🇧', description:'Riz aux lentilles et oignons caramélisés, plat végétarien.',temps_prep:'10 min',temps_cuisson:'35 min',temps_total:'45 min',portions:4,difficulte:'Facile',ingredients_dispo:['Lentilles','Riz'],ingredients_manquants:['Oignon','Cumin'],match:85 },
+    { nom:'Taboulé rapide', flag:'🇱🇧', description:'Salade de persil, tomates et boulgour, fraîche et légère.',temps_prep:'15 min',temps_cuisson:'0 min',temps_total:'15 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates'],ingredients_manquants:['Persil','Boulgour','Citron'],match:80 },
   ],
   'Grèce': [
-    { nom:'Strapatsada grecque', flag:'🇬🇷', description:'Œufs brouillés à la tomate et à l\'ail, plat grec traditionnel express.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Feta','Origan'],match:95 },
+    { nom:'Strapatsada grecque', flag:'🇬🇷', description:'Œufs brouillés à la tomate et à l\'ail, express.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Feta','Origan'],match:95 },
+    { nom:'Spanakopita express', flag:'🇬🇷', description:'Feuilleté aux épinards et feta, au four.',temps_prep:'10 min',temps_cuisson:'20 min',temps_total:'30 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs'],ingredients_manquants:['Épinards','Feta','Pâte filo'],match:80 },
   ],
   'Espagne': [
     { nom:'Huevos a la flamenca', flag:'🇪🇸', description:'Œufs en sauce tomate à l\'espagnole, cuits au four.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Paprika fumé','Poivron'],match:91 },
+    { nom:'Gazpacho', flag:'🇪🇸', description:'Soupe froide de tomates, concombre et ail. Sans cuisson.',temps_prep:'10 min',temps_cuisson:'0 min',temps_total:'10 min',portions:4,difficulte:'Très facile',ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Concombre','Poivron','Vinaigre'],match:88 },
   ],
   'Inde': [
-    { nom:'Egg masala', flag:'🇮🇳', description:'Œufs durs mijotés dans une sauce tomate aux épices indiennes.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Curcuma','Cumin','Garam masala'],match:89 },
+    { nom:'Egg masala', flag:'🇮🇳', description:'Œufs durs mijotés dans une sauce tomate aux épices.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Curcuma','Cumin','Garam masala'],match:89 },
+    { nom:'Dal de lentilles', flag:'🇮🇳', description:'Lentilles aux épices indiennes, batch végétarien.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:4,difficulte:'Facile',ingredients_dispo:['Lentilles','Ail'],ingredients_manquants:['Curcuma','Cumin','Gingembre'],match:86 },
+    { nom:'Riz épicé', flag:'🇮🇳', description:'Riz pilaf aux épices indiennes et petits pois.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Riz'],ingredients_manquants:['Curcuma','Petits pois','Garam masala'],match:82 },
   ],
   'Japon': [
-    { nom:'Tamago dofu', flag:'🇯🇵', description:'Flan d\'œufs japonais délicat, servi froid avec bouillon dashi.',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Moyen',ingredients_dispo:['Œufs'],ingredients_manquants:['Dashi','Sauce soja'],match:78 },
+    { nom:'Tamago dofu', flag:'🇯🇵', description:'Flan d\'œufs japonais, servi froid avec bouillon dashi.',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Moyen',ingredients_dispo:['Œufs'],ingredients_manquants:['Dashi','Sauce soja'],match:78 },
+    { nom:'Chahan (riz frit)', flag:'🇯🇵', description:'Riz frit à la japonaise avec œufs et légumes.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Facile',ingredients_dispo:['Riz','Œufs'],ingredients_manquants:['Sauce soja','Ciboule'],match:85 },
   ],
   'Mexique': [
-    { nom:'Huevos rancheros', flag:'🇲🇽', description:'Œufs sur sauce tomate et ail épicée, petit-déjeuner mexicain traditionnel.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Tortillas','Piment'],match:93 },
+    { nom:'Huevos rancheros', flag:'🇲🇽', description:'Œufs sur sauce tomate et ail épicée, petit-déjeuner mexicain.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Tortillas','Piment'],match:93 },
+    { nom:'Frijoles de la olla', flag:'🇲🇽', description:'Haricots noirs mijotés à l\'ail et cumin, batch idéal.',temps_prep:'5 min',temps_cuisson:'40 min',temps_total:'45 min',portions:6,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Haricots noirs','Cumin','Oignon'],match:80 },
   ],
   'Chine': [
-    { nom:'Omelette tomates-œufs', flag:'🇨🇳', description:'Plat familial chinois classique, tomates et œufs sautés. Prêt en 10 min.',temps_prep:'3 min',temps_cuisson:'7 min',temps_total:'10 min',portions:3,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Huile de sésame','Ciboule'],match:97 },
+    { nom:'Omelette tomates-œufs', flag:'🇨🇳', description:'Plat familial chinois classique, prêt en 10 min.',temps_prep:'3 min',temps_cuisson:'7 min',temps_total:'10 min',portions:3,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Huile de sésame','Ciboule'],match:97 },
+    { nom:'Congee aux légumes', flag:'🇨🇳', description:'Bouillie de riz chinoise aux légumes, réconfortante.',temps_prep:'5 min',temps_cuisson:'30 min',temps_total:'35 min',portions:4,difficulte:'Facile',ingredients_dispo:['Riz'],ingredients_manquants:['Gingembre','Ciboule','Sauce soja'],match:82 },
   ],
   'Thaïlande': [
-    { nom:'Kai jeow (omelette thaï)', flag:'🇹🇭', description:'Omelette thaïlandaise croustillante à la sauce de poisson et ail.',temps_prep:'3 min',temps_cuisson:'5 min',temps_total:'8 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Ail'],ingredients_manquants:['Sauce de poisson','Piment'],match:91 },
+    { nom:'Kai jeow (omelette thaï)', flag:'🇹🇭', description:'Omelette thaïlandaise croustillante à l\'ail.',temps_prep:'3 min',temps_cuisson:'5 min',temps_total:'8 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Ail'],ingredients_manquants:['Sauce de poisson','Piment'],match:91 },
+    { nom:'Riz thaï au gingembre', flag:'🇹🇭', description:'Riz sauté au gingembre et ciboule, parfumé.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:3,difficulte:'Facile',ingredients_dispo:['Riz'],ingredients_manquants:['Gingembre','Ciboule','Sauce soja'],match:84 },
   ],
   'Vietnam': [
-    { nom:'Cơm chiên trứng', flag:'🇻🇳', description:'Riz frit aux œufs à la vietnamienne, rapide et savoureux.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:3,difficulte:'Facile',ingredients_dispo:['Œufs','Riz'],ingredients_manquants:['Sauce soja','Ciboule'],match:88 },
+    { nom:'Cơm chiên trứng', flag:'🇻🇳', description:'Riz frit aux œufs à la vietnamienne.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:3,difficulte:'Facile',ingredients_dispo:['Œufs','Riz'],ingredients_manquants:['Sauce soja','Ciboule'],match:88 },
+    { nom:'Soupe pho végétarienne', flag:'🇻🇳', description:'Bouillon parfumé aux aromates avec vermicelles.',temps_prep:'10 min',temps_cuisson:'20 min',temps_total:'30 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Bouillon','Vermicelles','Anis étoilé','Gingembre'],match:76 },
   ],
   'Sénégal': [
-    { nom:'Yassa aux légumes', flag:'🇸🇳', description:'Sauce oignon-citron sénégalaise aux légumes, batch cooking idéal.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:6,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Oignons','Citron','Moutarde'],match:79 },
+    { nom:'Yassa aux légumes', flag:'🇸🇳', description:'Sauce oignon-citron sénégalaise aux légumes.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:6,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Oignons','Citron','Moutarde'],match:79 },
+    { nom:'Thiéboudienne végétarien', flag:'🇸🇳', description:'Riz aux légumes sénégalais, version végétarienne.',temps_prep:'15 min',temps_cuisson:'40 min',temps_total:'55 min',portions:6,difficulte:'Moyen',ingredients_dispo:['Riz','Tomates'],ingredients_manquants:['Chou','Carotte','Aubergine africaine'],match:77 },
   ],
   'Pérou': [
-    { nom:'Papas a la huancaína', flag:'🇵🇪', description:'Sauce crémeuse péruvienne sur légumes, épicée et savoureuse.',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Pommes de terre','Fromage frais','Aji amarillo'],match:75 },
+    { nom:'Papas a la huancaína', flag:'🇵🇪', description:'Sauce crémeuse péruvienne sur légumes.',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Pommes de terre','Fromage frais','Aji amarillo'],match:75 },
   ],
   'Éthiopie': [
     { nom:'Shiro wat', flag:'🇪🇹', description:'Ragoût éthiopien de pois chiches à l\'ail et au berbéré.',temps_prep:'5 min',temps_cuisson:'25 min',temps_total:'30 min',portions:4,difficulte:'Facile',ingredients_dispo:['Ail'],ingredients_manquants:['Farine de pois chiches','Berbéré'],match:80 },
+    { nom:'Misir wat', flag:'🇪🇹', description:'Lentilles rouges aux épices éthiopiennes, vegan et batch.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:4,difficulte:'Facile',ingredients_dispo:['Lentilles','Ail'],ingredients_manquants:['Berbéré','Oignon'],match:82 },
   ],
   'Turquie': [
-    { nom:'Menemen', flag:'🇹🇷', description:'Œufs brouillés turcs aux tomates et poivrons, prêt en 12 min.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Poivron','Paprika'],match:94 },
+    { nom:'Menemen', flag:'🇹🇷', description:'Œufs brouillés turcs aux tomates et poivrons.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Poivron','Paprika'],match:94 },
+    { nom:'Mercimek çorbası', flag:'🇹🇷', description:'Soupe de lentilles rouges turque, crémeuse et parfumée.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:4,difficulte:'Facile',ingredients_dispo:['Lentilles','Ail'],ingredients_manquants:['Oignon','Cumin','Paprika'],match:86 },
+  ],
+};
+
+// --- MODE KIDS ---
+const KIDS_RECIPE_DB = {
+  'France': [
+    { nom:'Crêpes aux épinards cachés', flag:'🇫🇷', description:'Crêpes vertes avec épinards mixés dans la pâte — les enfants adorent la couleur !',temps_prep:'10 min',temps_cuisson:'15 min',temps_total:'25 min',portions:4,difficulte:'Facile',legume_cache:'Épinards mixés dans la pâte',astuce_parent:'Appelle-les "crêpes Hulk"',ingredients_dispo:['Œufs','Lait','Farine'],ingredients_manquants:['Épinards'],match:90 },
+    { nom:'Hachis parmentier aux légumes', flag:'🇫🇷', description:'Purée de pommes de terre sur légumes cachés, gratiné au four.',temps_prep:'15 min',temps_cuisson:'30 min',temps_total:'45 min',portions:4,difficulte:'Facile',legume_cache:'Carottes et courgettes dans la farce',astuce_parent:'Laisser l\'enfant faire des dessins sur la purée',ingredients_dispo:['Pommes de terre','Œufs'],ingredients_manquants:['Viande hachée halal','Carotte','Courgette'],match:88 },
+    { nom:'Gratin de pâtes aux courgettes', flag:'🇫🇷', description:'Pâtes gratinées avec courgettes râpées cachées dans la béchamel.',temps_prep:'10 min',temps_cuisson:'25 min',temps_total:'35 min',portions:4,difficulte:'Facile',legume_cache:'Courgette râpée dans la sauce',astuce_parent:'Couper les pâtes en petits morceaux pour les petits',ingredients_dispo:['Pâtes','Œufs'],ingredients_manquants:['Courgette','Fromage râpé','Lait'],match:87 },
+    { nom:'Omelette roulée aux tomates', flag:'🇫🇷', description:'Omelette douce avec tomates fondantes cachées à l\'intérieur.',temps_prep:'5 min',temps_cuisson:'8 min',temps_total:'13 min',portions:2,difficulte:'Très facile',legume_cache:'Tomates fondues dans l\'omelette',astuce_parent:'Rouler l\'omelette comme une crêpe',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:[],match:92 },
+  ],
+  'Italie': [
+    { nom:'Pizza maison légumes cachés', flag:'🇮🇹', description:'Sauce tomate avec courgettes et épinards mixés, fromagée.',temps_prep:'20 min',temps_cuisson:'20 min',temps_total:'40 min',portions:4,difficulte:'Moyen',legume_cache:'Courgette et épinards dans la sauce tomate',astuce_parent:'Laisser l\'enfant mettre le fromage',ingredients_dispo:['Tomates','Œufs'],ingredients_manquants:['Pâte à pizza','Mozzarella','Courgette','Épinards'],match:88 },
+    { nom:'Pasta aux carottes mixées', flag:'🇮🇹', description:'Sauce tomate-carotte crémeuse sur pâtes, goût doux et sucré.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:3,difficulte:'Facile',legume_cache:'Carottes mixées dans la sauce',astuce_parent:'Choisir des pâtes en formes marrantes',ingredients_dispo:['Tomates','Pâtes'],ingredients_manquants:['Carottes','Crème'],match:92 },
+  ],
+  'Tunisie': [
+    { nom:'Spaghetti au thon tunisien', flag:'🇹🇳', description:'Pâtes sauce tomate douce au thon, sans piment.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Très facile',legume_cache:'Tomates mixées dans la sauce',astuce_parent:'Ajouter des légumes en petits cubes',ingredients_dispo:['Pâtes','Tomates'],ingredients_manquants:['Thon en boîte','Ail'],match:91 },
+    { nom:'Œufs à la tomate douce', flag:'🇹🇳', description:'Œufs dans une sauce tomate douce, version kids de la chakchouka.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',legume_cache:'Tomates cuites dans la sauce',astuce_parent:'Décorer avec des tomates cerises',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:[],match:95 },
+  ],
+  'Maroc': [
+    { nom:'Couscous doux aux légumes', flag:'🇲🇦', description:'Couscous aux légumes tendres sans épices, dès 2 ans.',temps_prep:'10 min',temps_cuisson:'20 min',temps_total:'30 min',portions:4,difficulte:'Facile',legume_cache:'Carottes et courgettes mixées avec le bouillon',astuce_parent:'Laisser l\'enfant faire des petites boules',ingredients_dispo:['Semoule','Carottes'],ingredients_manquants:['Courgette','Bouillon'],match:88 },
+  ],
+  'Chine': [
+    { nom:'Riz frit aux légumes kids', flag:'🇨🇳', description:'Riz sauté avec petits pois et carottes, coloré.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:3,difficulte:'Facile',legume_cache:'Petits pois et carottes dans le riz',astuce_parent:'Laisser l\'enfant mélanger les couleurs',ingredients_dispo:['Riz','Œufs'],ingredients_manquants:['Petits pois','Carotte','Sauce soja légère'],match:90 },
+  ],
+  'Inde': [
+    { nom:'Dal doux aux lentilles', flag:'🇮🇳', description:'Lentilles aux épices douces sans piment, version kids.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',legume_cache:'Carottes fondues dans le dal',astuce_parent:'Servir avec du pain naan pour tremper',ingredients_dispo:['Lentilles'],ingredients_manquants:['Curcuma doux','Carotte','Tomate'],match:87 },
+  ],
+  'Espagne': [
+    { nom:'Tortilla espagnole', flag:'🇪🇸', description:'Omelette de pommes de terre, plat familial adoré des enfants.',temps_prep:'10 min',temps_cuisson:'20 min',temps_total:'30 min',portions:4,difficulte:'Facile',legume_cache:'Pommes de terre dans l\'omelette',astuce_parent:'Laisser l\'enfant découper des formes',ingredients_dispo:['Œufs','Pommes de terre'],ingredients_manquants:['Oignon'],match:91 },
+  ],
+  'Grèce': [
+    { nom:'Spanakopita kid-friendly', flag:'🇬🇷', description:'Mini feuilletés aux épinards et fromage fondu, format petite bouche.',temps_prep:'15 min',temps_cuisson:'20 min',temps_total:'35 min',portions:4,difficulte:'Facile',legume_cache:'Épinards dans le feuilleté croustillant',astuce_parent:'Faire des petits triangles que l\'enfant mange comme des biscuits',ingredients_dispo:['Œufs'],ingredients_manquants:['Épinards','Fromage','Pâte filo'],match:85 },
+  ],
+};
+
+// --- MODE RÉGIME ---
+const REGIME_RECIPE_DB = {
+  'Tunisie': [
+    { nom:'Chakchouka allégée', flag:'🇹🇳', description:'Œufs pochés en sauce tomate, faible en glucides.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 14g · Glucides: 8g · IG bas',regimes:['diabétique','sans gluten','sans lactose','hypertension'],ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Harissa douce'],match:94 },
+    { nom:'Salade mechouia légère', flag:'🇹🇳', description:'Légumes grillés sans huile, riche en fibres.',temps_prep:'10 min',temps_cuisson:'10 min',temps_total:'20 min',portions:4,difficulte:'Très facile',info_nutritionnelle:'Fibres: 4g · Sodium: 50mg · Très faible en calories',regimes:['diabétique','vegan','sans gluten','sans lactose','hypertension','rénal'],ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Poivron','Citron'],match:88 },
+    { nom:'Lablabi rénal', flag:'🇹🇳', description:'Soupe de pois chiches sans sel ni harissa, faible en potassium.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',info_nutritionnelle:'Potassium modéré · Phosphore bas · Sans sel ajouté',regimes:['rénal','hypertension'],ingredients_dispo:['Ail'],ingredients_manquants:['Pois chiches','Cumin'],match:80 },
+  ],
+  'Maroc': [
+    { nom:'Tagine de légumes vegan', flag:'🇲🇦', description:'Légumes mijotés aux épices douces, 100% végétal.',temps_prep:'15 min',temps_cuisson:'30 min',temps_total:'45 min',portions:4,difficulte:'Facile',info_nutritionnelle:'Protéines végétales: 8g · Fibres: 12g · Sans cholestérol',regimes:['vegan','sans gluten','sans lactose','diabétique'],ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Courgette','Carotte','Pois chiches'],match:85 },
+    { nom:'Harira sans gluten', flag:'🇲🇦', description:'Soupe marocaine sans farine, à base de lentilles.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:6,difficulte:'Facile',info_nutritionnelle:'Protéines: 12g · Sans gluten · IG moyen',regimes:['sans gluten','sans lactose','diabétique'],ingredients_dispo:['Lentilles','Tomates','Ail'],ingredients_manquants:['Céleri','Coriandre'],match:83 },
+  ],
+  'Grèce': [
+    { nom:'Strapatsada légère', flag:'🇬🇷', description:'Œufs brouillés à la tomate sans matière grasse.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 16g · Glucides: 6g · Sans lactose',regimes:['diabétique','sans gluten','sans lactose','hypertension'],ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Origan'],match:92 },
+    { nom:'Salade grecque sans fromage', flag:'🇬🇷', description:'Tomates, concombre et olives, version sans feta.',temps_prep:'10 min',temps_cuisson:'0 min',temps_total:'10 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Fibres: 5g · Sans lactose · Faible sodium',regimes:['vegan','sans gluten','sans lactose','diabétique'],ingredients_dispo:['Tomates'],ingredients_manquants:['Concombre','Olives','Citron'],match:86 },
+  ],
+  'France': [
+    { nom:'Soupe de légumes sans sel', flag:'🇫🇷', description:'Minestrone maison sans sel ajouté, riche en légumes.',temps_prep:'15 min',temps_cuisson:'25 min',temps_total:'40 min',portions:4,difficulte:'Facile',info_nutritionnelle:'Sodium: 30mg · Fibres: 8g · Très faible en calories',regimes:['hypertension','diabétique','vegan','sans gluten','sans lactose','rénal'],ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Poireau','Carotte','Courgette'],match:84 },
+    { nom:'Salade de lentilles aux herbes', flag:'🇫🇷', description:'Lentilles froides aux herbes et citron, IG bas.',temps_prep:'10 min',temps_cuisson:'20 min',temps_total:'30 min',portions:4,difficulte:'Facile',info_nutritionnelle:'IG bas: 32 · Protéines: 14g · Fibres: 8g',regimes:['diabétique','vegan','sans gluten','sans lactose'],ingredients_dispo:['Lentilles'],ingredients_manquants:['Persil','Citron','Oignon'],match:87 },
+    { nom:'Salade tomates-œufs durs', flag:'🇫🇷', description:'Salade légère et protéinée, idéale pour tous les régimes.',temps_prep:'8 min',temps_cuisson:'10 min',temps_total:'18 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 12g · Lipides: 8g · Sans gluten',regimes:['diabétique','sans gluten','sans lactose','hypertension'],ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Huile d\'olive','Vinaigre'],match:90 },
+  ],
+  'Inde': [
+    { nom:'Dal de lentilles rouges vegan', flag:'🇮🇳', description:'Lentilles rouges au curcuma et gingembre, 100% végétal.',temps_prep:'10 min',temps_cuisson:'20 min',temps_total:'30 min',portions:4,difficulte:'Facile',info_nutritionnelle:'Protéines: 12g · Glucides: 18g · IG bas · Vegan',regimes:['vegan','sans gluten','sans lactose','diabétique'],ingredients_dispo:['Lentilles','Ail'],ingredients_manquants:['Curcuma','Gingembre','Cumin'],match:88 },
+    { nom:'Riz au curcuma sans lactose', flag:'🇮🇳', description:'Riz parfumé au curcuma, anti-inflammatoire.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:4,difficulte:'Facile',info_nutritionnelle:'Sans lactose · Anti-inflammatoire · IG moyen',regimes:['sans lactose','sans gluten','vegan'],ingredients_dispo:['Riz'],ingredients_manquants:['Curcuma','Huile de coco'],match:82 },
+  ],
+  'Liban': [
+    { nom:'Mujaddara (rénal)', flag:'🇱🇧', description:'Riz aux lentilles et oignons, faible en potassium.',temps_prep:'10 min',temps_cuisson:'35 min',temps_total:'45 min',portions:4,difficulte:'Facile',info_nutritionnelle:'Potassium: 280mg/portion · Phosphore bas · Sans lactose',regimes:['rénal','sans lactose','vegan','sans gluten'],ingredients_dispo:['Lentilles','Riz'],ingredients_manquants:['Oignon','Cumin'],match:84 },
+    { nom:'Taboulé sans gluten', flag:'🇱🇧', description:'Taboulé à base de quinoa (sans boulgour), frais et léger.',temps_prep:'15 min',temps_cuisson:'15 min',temps_total:'30 min',portions:4,difficulte:'Facile',info_nutritionnelle:'Sans gluten · Vegan · Fibres: 6g',regimes:['sans gluten','vegan','sans lactose','diabétique'],ingredients_dispo:['Tomates'],ingredients_manquants:['Quinoa','Persil','Citron'],match:83 },
+  ],
+  'Algérie': [
+    { nom:'Chorba de légumes sans sel', flag:'🇩🇿', description:'Soupe algérienne allégée, sans sel, riche en légumes.',temps_prep:'10 min',temps_cuisson:'30 min',temps_total:'40 min',portions:6,difficulte:'Facile',info_nutritionnelle:'Sodium: 40mg · Fibres: 7g · Vegan',regimes:['hypertension','rénal','vegan','sans gluten','sans lactose'],ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Courgette','Carotte','Céleri'],match:82 },
+  ],
+  'Espagne': [
+    { nom:'Gazpacho détox', flag:'🇪🇸', description:'Soupe froide de légumes crus, zéro cuisson, très faible en calories.',temps_prep:'10 min',temps_cuisson:'0 min',temps_total:'10 min',portions:4,difficulte:'Très facile',info_nutritionnelle:'Calories: 45kcal · Vitamines C & A · Sans gluten · Vegan',regimes:['diabétique','vegan','sans gluten','sans lactose','hypertension','rénal'],ingredients_dispo:['Tomates','Ail'],ingredients_manquants:['Concombre','Poivron','Citron'],match:86 },
   ],
 };
 
@@ -1210,56 +1228,72 @@ const DEFAULT_RECIPES = {
     { nom:'Huevos rancheros', pays:'Mexique', flag:'🇲🇽', description:'Œufs sur sauce tomate et ail épicée, prêt en 15 min.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Tortillas'],match:88 },
   ],
   kids: [
-    { nom:'Omelette roulée aux tomates', pays:'France', flag:'🇫🇷', description:'Omelette douce avec tomates fondantes cachées à l\'intérieur.',temps_prep:'5 min',temps_cuisson:'8 min',temps_total:'13 min',portions:2,difficulte:'Très facile',legume_cache:'Tomates fondues dans l\'omelette',astuce_parent:'Rouler l\'omelette comme une crêpe',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:[],match:92 },
-    { nom:'Œufs cocotte tomates', pays:'France', flag:'🇫🇷', description:'Œufs cuits dans des tomates évidées, recette cute pour les enfants.',temps_prep:'5 min',temps_cuisson:'15 min',temps_total:'20 min',portions:4,difficulte:'Facile',legume_cache:'Tomate utilisée comme cocotte',astuce_parent:'Laisser l\'enfant choisir sa tomate',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Fromage râpé'],match:88 },
-    { nom:'Pain perdu aux tomates', pays:'France', flag:'🇫🇷', description:'Pain trempé dans l\'œuf avec tomates cerises poêlées.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',legume_cache:'Tomates mélangées à l\'œuf',astuce_parent:'Appeler ça "pain magique"',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:['Pain'],match:85 },
+    { nom:'Pasta aux carottes mixées', pays:'Italie', flag:'🇮🇹', description:'Sauce tomate-carotte crémeuse sur pâtes, goût doux.',temps_prep:'5 min',temps_cuisson:'20 min',temps_total:'25 min',portions:3,difficulte:'Facile',legume_cache:'Carottes mixées dans la sauce',astuce_parent:'Choisir des pâtes en formes marrantes',ingredients_dispo:['Pâtes','Tomates'],ingredients_manquants:['Carottes','Crème'],match:92 },
+    { nom:'Œufs à la tomate douce', pays:'Tunisie', flag:'🇹🇳', description:'Œufs dans une sauce tomate douce, version kids.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',legume_cache:'Tomates cuites dans la sauce',astuce_parent:'Décorer avec des tomates cerises',ingredients_dispo:['Œufs','Tomates'],ingredients_manquants:[],match:95 },
+    { nom:'Riz frit aux légumes kids', pays:'Chine', flag:'🇨🇳', description:'Riz sauté avec petits pois et carottes, coloré.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:3,difficulte:'Facile',legume_cache:'Petits pois et carottes dans le riz',astuce_parent:'Laisser l\'enfant mélanger les couleurs',ingredients_dispo:['Riz','Œufs'],ingredients_manquants:['Petits pois','Carotte'],match:90 },
   ],
   regime: [
-    { nom:'Chakchouka allégée', pays:'Tunisie', flag:'🇹🇳', description:'Œufs pochés en sauce tomate, faible en glucides et riche en protéines.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 14g · Glucides: 8g · IG bas',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Harissa douce'],match:94 },
-    { nom:'Salade tomates-œufs durs', pays:'France', flag:'🇫🇷', description:'Salade légère et protéinée, idéale pour tous les régimes.',temps_prep:'8 min',temps_cuisson:'10 min',temps_total:'18 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 12g · Lipides: 8g · Sans gluten',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Huile d\'olive','Vinaigre'],match:90 },
-    { nom:'Strapatsada grecque', pays:'Grèce', flag:'🇬🇷', description:'Œufs brouillés à la tomate, riche en protéines, très faible en glucides.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 16g · Glucides: 6g · IG très bas',ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Feta','Origan'],match:92 },
-  ]
+    { nom:'Chakchouka allégée', pays:'Tunisie', flag:'🇹🇳', description:'Œufs pochés en sauce tomate, faible en glucides.',temps_prep:'5 min',temps_cuisson:'10 min',temps_total:'15 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 14g · Glucides: 8g · IG bas',regimes:['diabétique','sans gluten','sans lactose'],ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Harissa douce'],match:94 },
+    { nom:'Salade de lentilles aux herbes', pays:'France', flag:'🇫🇷', description:'Lentilles froides aux herbes et citron, IG bas.',temps_prep:'10 min',temps_cuisson:'20 min',temps_total:'30 min',portions:4,difficulte:'Facile',info_nutritionnelle:'IG bas: 32 · Protéines: 14g · Fibres: 8g',regimes:['diabétique','vegan','sans gluten'],ingredients_dispo:['Lentilles'],ingredients_manquants:['Persil','Citron'],match:87 },
+    { nom:'Strapatsada légère', pays:'Grèce', flag:'🇬🇷', description:'Œufs brouillés à la tomate, riche en protéines.',temps_prep:'3 min',temps_cuisson:'10 min',temps_total:'13 min',portions:2,difficulte:'Très facile',info_nutritionnelle:'Protéines: 16g · Glucides: 6g · IG très bas',regimes:['diabétique','sans gluten','sans lactose'],ingredients_dispo:['Œufs','Tomates','Ail'],ingredients_manquants:['Origan'],match:92 },
+  ],
 };
 
-function buildSmartFallback(screen, paysList, tmax) {
+// ============================================================
+// LOCAL RECIPE MATCHING ENGINE
+// ============================================================
+function buildLocalRecipes(screen, paysList, tmax, userIngredients) {
   const tmaxMin = tmax === '15 min' ? 15 : tmax === '30 min' ? 30 : tmax === '60 min' ? 60 : 999;
+  const db = screen === 'kids' ? KIDS_RECIPE_DB : screen === 'regime' ? REGIME_RECIPE_DB : RECIPE_DB;
+
   let pool = [];
 
   if (paysList && paysList.length > 0) {
-    // Cherche dans la base de recettes pour chaque pays sélectionné
     paysList.forEach(pays => {
-      if (RECIPE_DB[pays]) {
-        RECIPE_DB[pays].forEach(r => {
-          pool.push({ ...r, pays });
-        });
-      }
+      if (db[pays]) db[pays].forEach(r => pool.push({ ...r, pays }));
+    });
+  } else {
+    Object.entries(db).forEach(([pays, recipes]) => {
+      recipes.forEach(r => pool.push({ ...r, pays }));
     });
   }
 
-  // Filtre par temps
-  pool = pool.filter(r => {
-    const total = parseInt(r.temps_total) || 60;
-    return total <= tmaxMin;
-  });
+  // Filter by time
+  pool = pool.filter(r => (parseInt(r.temps_total) || 60) <= tmaxMin);
 
-  // Si pas assez, complète avec les defaults
+  // Filter by regime type
+  if (screen === 'regime' && currentRegime) {
+    const filtered = pool.filter(r => r.regimes && r.regimes.includes(currentRegime));
+    if (filtered.length >= 3) pool = filtered;
+  }
+
+  // Dynamic ingredient matching
+  if (userIngredients && userIngredients.length > 0) {
+    pool = pool.map(r => {
+      const allIng = [...(r.ingredients_dispo || []), ...(r.ingredients_manquants || [])];
+      if (!allIng.length) return r;
+      const dispo = allIng.filter(ri =>
+        userIngredients.some(ui => ri.toLowerCase().includes(ui.toLowerCase()) || ui.toLowerCase().includes(ri.toLowerCase()))
+      );
+      const manquants = allIng.filter(ri => !dispo.includes(ri));
+      const matchScore = Math.min(100, 50 + Math.round((dispo.length / allIng.length) * 50));
+      return { ...r, match: matchScore, ingredients_dispo: dispo, ingredients_manquants: manquants };
+    });
+  }
+
+  pool.sort((a, b) => b.match - a.match);
+
+  // Fallback to defaults if not enough
   if (pool.length < 3) {
     const defaults = DEFAULT_RECIPES[screen] || DEFAULT_RECIPES.frigo;
-    defaults.forEach(r => {
-      if (!pool.find(p => p.nom === r.nom)) pool.push(r);
-    });
+    defaults.forEach(r => { if (!pool.find(p => p.nom === r.nom)) pool.push(r); });
   }
 
-  // Ajoute info_nutritionnelle ou legume_cache selon screen si manquant
   return pool.slice(0, 3).map(r => {
     if (screen === 'kids' && !r.legume_cache) r.legume_cache = 'Légumes incorporés dans la recette';
     if (screen === 'regime' && !r.info_nutritionnelle) r.info_nutritionnelle = 'Recette équilibrée, adaptable à votre régime';
     return r;
   });
-}
-
-function getFallback(screen) {
-  return DEFAULT_RECIPES[screen] || DEFAULT_RECIPES.frigo;
 }
 
 // ============================================================
