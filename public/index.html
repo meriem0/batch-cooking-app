@@ -352,7 +352,7 @@ body{background:var(--bg3);font-family:var(--sans);color:var(--text);min-height:
       <button class="pref-btn g" onclick="togglePref(this)">Rapide</button>
       <button class="pref-btn g" onclick="togglePref(this)">Sans gluten</button>
     </div>
-    <button class="gen-btn g" id="frigBtn" onclick="generate('frigo')">Générer mes recettes ↗</button>
+    <button class="gen-btn g" id="frigBtn" onclick="generate('frigo')">Trouver mes recettes ↗</button>
     <div class="results" id="frigo-results"></div>
   </div>
 
@@ -391,7 +391,7 @@ body{background:var(--bg3);font-family:var(--sans);color:var(--text);min-height:
       <button class="pref-btn o" onclick="togglePref(this)">Muffins</button>
       <button class="pref-btn o" onclick="togglePref(this)">Smoothie</button>
     </div>
-    <button class="gen-btn o" id="kidsBtn" onclick="generate('kids')">Générer recettes enfant ↗</button>
+    <button class="gen-btn o" id="kidsBtn" onclick="generate('kids')">Trouver recettes enfant ↗</button>
     <div class="results" id="kids-results"></div>
   </div>
 
@@ -424,7 +424,7 @@ body{background:var(--bg3);font-family:var(--sans);color:var(--text);min-height:
       <button class="time-btn sb" onclick="selectTime(this,'regime','60 min')">≤ 1h</button>
       <button class="time-btn" onclick="selectTime(this,'regime','illimité')">Tout</button>
     </div>
-    <button class="gen-btn b" id="regBtn" onclick="generate('regime')">Générer recettes adaptées ↗</button>
+    <button class="gen-btn b" id="regBtn" onclick="generate('regime')">Trouver recettes adaptées ↗</button>
     <div class="results" id="regime-results"></div>
   </div>
 
@@ -608,7 +608,7 @@ function openLangModal() {
     <div class="modal-overlay">
       <div class="modal-box">
         <div class="modal-title">Choisir la langue</div>
-        <div class="modal-sub">Les recettes seront générées dans cette langue</div>
+        <div class="modal-sub">Les recettes seront affichées dans cette langue</div>
         <div class="lang-grid">${html}</div>
         <button class="modal-cancel" onclick="closeLangModal()">Fermer</button>
       </div>
@@ -848,16 +848,13 @@ function renderResults(recipes, resId, color, screen) {
           ▶ Vidéo
         </button>
       </div>
-      <button class="recipe-full-btn" onclick="askFullRecipe('${esc(r.nom)}','${pays}')">Voir la recette complète ↗</button>`;
+      <button class="recipe-full-btn" onclick="openVideoModal('${esc(r.nom)}','${pays}','${flag}')">▶ Voir la vidéo complète ↗</button>`;
     div.appendChild(card);
   });
 }
 
 function esc(s) { return s.replace(/'/g, "\\'").replace(/"/g, '\\"').substring(0, 120); }
 
-function askFullRecipe(nom, pays) {
-  alert(`Pour obtenir la recette complète de "${nom}" (cuisine ${pays}), utilise un assistant IA avec cette question :\n\n"Donne-moi la recette complète étape par étape en ${currentLang.name} pour : ${nom}, cuisine ${pays}, style batch cooking."`);
-}
 
 // ============================================================
 // AUDIO
