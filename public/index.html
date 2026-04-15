@@ -490,6 +490,36 @@ const COUNTRIES = [
   {flag:'🇻🇳',name:'Vietnam'},{flag:'🇵🇪',name:'Pérou'},{flag:'🇪🇹',name:'Éthiopie'}
 ];
 
+// Dialect/language code per country for native-voice audio
+const COUNTRY_LANG = {
+  'Tunisie':  { code:'ar-TN', greeting:'في مطبخنا التونسي' },
+  'Maroc':    { code:'ar-MA', greeting:'في مطبخنا المغربي' },
+  'Algérie':  { code:'ar-DZ', greeting:'في مطبخنا الجزائري' },
+  'Liban':    { code:'ar-LB', greeting:'في مطبخنا اللبناني' },
+  'France':   { code:'fr-FR', greeting:'Dans notre cuisine française' },
+  'Italie':   { code:'it-IT', greeting:'Nella nostra cucina italiana' },
+  'Espagne':  { code:'es-ES', greeting:'En nuestra cocina española' },
+  'Mexique':  { code:'es-MX', greeting:'En nuestra cocina mexicana' },
+  'Pérou':    { code:'es-PE', greeting:'En nuestra cocina peruana' },
+  'Grèce':    { code:'el-GR', greeting:'Στην ελληνική μας κουζίνα' },
+  'Turquie':  { code:'tr-TR', greeting:'Türk mutfağımızda' },
+  'Inde':     { code:'hi-IN', greeting:'हमारे भारतीय रसोई में' },
+  'Japon':    { code:'ja-JP', greeting:'日本の料理' },
+  'Chine':    { code:'zh-CN', greeting:'中国厨房' },
+  'Vietnam':  { code:'vi-VN', greeting:'Trong bếp Việt Nam' },
+  'Thaïlande':{ code:'th-TH', greeting:'ในครัวไทย' },
+  'Sénégal':  { code:'fr-SN', greeting:'Dans notre cuisine sénégalaise' },
+  'Éthiopie': { code:'am-ET', greeting:'የኢትዮጵያ ምግብ ቤታችን' },
+};
+
+// Normalize string: remove accents, lowercase, for fuzzy matching
+function normalizeStr(s) {
+  return (s || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/œ/g, 'oe').replace(/æ/g, 'ae')
+    .replace(/[^a-z0-9\s]/g, '').trim();
+}
+
 const LANGUAGES = [
   {flag:'🇫🇷',name:'Français',code:'fr'},
   {flag:'🇬🇧',name:'English',code:'en'},
@@ -781,7 +811,10 @@ function renderResults(recipes, resId, color, screen) {
     let extra = '';
     if (screen === 'kids' && r.legume_cache) extra = `<div class="recipe-extra">🌿 Astuce : ${r.legume_cache}</div>`;
     if (screen === 'regime' && r.info_nutritionnelle) extra = `<div class="recipe-extra">📊 Nutrition : ${r.info_nutritionnelle}</div>`;
-    const audioText = `${r.nom}. Cuisine ${pays}. ${r.description}. Préparation : ${r.temps_prep}. Cuisson : ${r.temps_cuisson}. Difficulté : ${r.difficulte}. ${r.portions} portions.`;
+    const countryLang = COUNTRY_LANG[pays];
+    const nativePreamble = countryLang ? countryLang.greeting + '. ' : '';
+    const audioText = `${nativePreamble}${r.nom}. ${r.description}. Préparation : ${r.temps_prep}. Cuisson : ${r.temps_cuisson}. Difficulté : ${r.difficulte}. ${r.portions} portions.`;
+    const audioLangCode = countryLang ? countryLang.code : (currentLang.code + '-' + currentLang.code.toUpperCase());
     const uid = 'rc' + Date.now() + i;
     const card = document.createElement('div');
     card.className = 'recipe-card';
@@ -808,7 +841,7 @@ function renderResults(recipes, resId, color, screen) {
       </div>
       ${extra}${missing}
       <div class="recipe-media">
-        <button class="audio-listen-btn" id="ab-${uid}" onclick="playRecipeAudio('${esc(audioText)}','${esc(r.nom)}','ab-${uid}')">
+        <button class="audio-listen-btn" id="ab-${uid}" onclick="playRecipeAudio('${esc(audioText)}','${esc(r.nom)}','ab-${uid}','${audioLangCode}')">
           🔊 Écouter
         </button>
         <button class="video-open-btn" onclick="openVideoModal('${esc(r.nom)}','${pays}','${flag}')">
@@ -829,7 +862,7 @@ function askFullRecipe(nom, pays) {
 // ============================================================
 // AUDIO
 // ============================================================
-function playRecipeAudio(text, nom, btnId) {
+function playRecipeAudio(text, nom, btnId, langCode) {
   if (typeof speechSynthesis === 'undefined') {
     alert('La synthèse vocale n\'est pas disponible dans votre navigateur.');
     return;
@@ -849,11 +882,15 @@ function playRecipeAudio(text, nom, btnId) {
     return;
   }
 
+  // Use country's native dialect, fallback to app language
+  const targetLang = langCode || (currentLang.code + '-' + currentLang.code.toUpperCase());
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = currentLang.code + '-' + currentLang.code.toUpperCase();
-  utterance.rate = 0.9;
+  utterance.lang = targetLang;
+  utterance.rate = 0.88;
   const voices = speechSynthesis.getVoices();
-  const voice = voices.find(v => v.lang.startsWith(currentLang.code));
+  // Try exact match first, then language prefix match
+  const voice = voices.find(v => v.lang === targetLang)
+    || voices.find(v => v.lang.startsWith(targetLang.split('-')[0]));
   if (voice) utterance.voice = voice;
 
   isAudioPlaying = true;
@@ -1267,14 +1304,19 @@ function buildLocalRecipes(screen, paysList, tmax, userIngredients) {
     if (filtered.length >= 3) pool = filtered;
   }
 
-  // Dynamic ingredient matching
+  // Dynamic ingredient matching (accent-insensitive, plural-tolerant)
   if (userIngredients && userIngredients.length > 0) {
+    const normUser = userIngredients.map(normalizeStr);
     pool = pool.map(r => {
       const allIng = [...(r.ingredients_dispo || []), ...(r.ingredients_manquants || [])];
       if (!allIng.length) return r;
-      const dispo = allIng.filter(ri =>
-        userIngredients.some(ui => ri.toLowerCase().includes(ui.toLowerCase()) || ui.toLowerCase().includes(ri.toLowerCase()))
-      );
+      const dispo = allIng.filter(ri => {
+        const normRi = normalizeStr(ri);
+        return normUser.some(nu => normRi.includes(nu) || nu.includes(normRi) ||
+          // handle simple plural (tomate/tomates, œuf/œufs)
+          normRi.includes(nu.replace(/s$/, '')) || nu.includes(normRi.replace(/s$/, ''))
+        );
+      });
       const manquants = allIng.filter(ri => !dispo.includes(ri));
       const matchScore = Math.min(100, 50 + Math.round((dispo.length / allIng.length) * 50));
       return { ...r, match: matchScore, ingredients_dispo: dispo, ingredients_manquants: manquants };
