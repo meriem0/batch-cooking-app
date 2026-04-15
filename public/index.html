@@ -812,9 +812,9 @@ function renderResults(recipes, resId, color, screen) {
     if (screen === 'kids' && r.legume_cache) extra = `<div class="recipe-extra">🌿 Astuce : ${r.legume_cache}</div>`;
     if (screen === 'regime' && r.info_nutritionnelle) extra = `<div class="recipe-extra">📊 Nutrition : ${r.info_nutritionnelle}</div>`;
     const countryLang = COUNTRY_LANG[pays];
-    const nativePreamble = countryLang ? countryLang.greeting + '. ' : '';
-    const audioText = `${nativePreamble}${r.nom}. ${r.description}. Préparation : ${r.temps_prep}. Cuisson : ${r.temps_cuisson}. Difficulté : ${r.difficulte}. ${r.portions} portions.`;
-    const audioLangCode = countryLang ? countryLang.code : (currentLang.code + '-' + currentLang.code.toUpperCase());
+    const nativeGreeting = countryLang ? countryLang.greeting : '';
+    const audioText = `${r.nom}. ${r.description}. Préparation : ${r.temps_prep}. Cuisson : ${r.temps_cuisson}. Difficulté : ${r.difficulte}. ${r.portions} portions.`;
+    const audioLangCode = countryLang ? countryLang.code : 'fr-FR';
     const uid = 'rc' + Date.now() + i;
     const card = document.createElement('div');
     card.className = 'recipe-card';
@@ -841,7 +841,7 @@ function renderResults(recipes, resId, color, screen) {
       </div>
       ${extra}${missing}
       <div class="recipe-media">
-        <button class="audio-listen-btn" id="ab-${uid}" onclick="playRecipeAudio('${esc(audioText)}','${esc(r.nom)}','ab-${uid}','${audioLangCode}')">
+        <button class="audio-listen-btn" id="ab-${uid}" onclick="playRecipeAudio('${esc(audioText)}','${esc(r.nom)}','ab-${uid}','${audioLangCode}','${esc(nativeGreeting)}')">
           🔊 Écouter
         </button>
         <button class="video-open-btn" onclick="openVideoModal('${esc(r.nom)}','${pays}','${flag}')">
@@ -859,7 +859,7 @@ function esc(s) { return s.replace(/'/g, "\\'").replace(/"/g, '\\"').substring(0
 // ============================================================
 // AUDIO
 // ============================================================
-function playRecipeAudio(text, nom, btnId, langCode) {
+function playRecipeAudio(text, nom, btnId, langCode, nativeGreeting) {
   if (typeof speechSynthesis === 'undefined') {
     alert('La synthèse vocale n\'est pas disponible dans votre navigateur.');
     return;
@@ -879,16 +879,31 @@ function playRecipeAudio(text, nom, btnId, langCode) {
     return;
   }
 
-  // Use country's native dialect, fallback to app language
-  const targetLang = langCode || (currentLang.code + '-' + currentLang.code.toUpperCase());
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = targetLang;
-  utterance.rate = 0.88;
   const voices = speechSynthesis.getVoices();
-  // Try exact match first, then language prefix match
-  const voice = voices.find(v => v.lang === targetLang)
-    || voices.find(v => v.lang.startsWith(targetLang.split('-')[0]));
-  if (voice) utterance.voice = voice;
+  // Try to find native voice for the recipe's country
+  const nativeVoice = langCode
+    ? (voices.find(v => v.lang === langCode) || voices.find(v => v.lang.startsWith(langCode.split('-')[0])))
+    : null;
+  // Fallback: best French voice, or any available voice
+  const frVoice = voices.find(v => v.lang === 'fr-FR') || voices[0];
+
+  let finalText, chosenVoice, chosenLang;
+  if (nativeVoice) {
+    // Native voice found: prepend greeting in native language
+    finalText = (nativeGreeting ? nativeGreeting + '. ' : '') + text;
+    chosenVoice = nativeVoice;
+    chosenLang = langCode;
+  } else {
+    // No native voice: read French text cleanly, skip non-Latin greeting
+    finalText = text;
+    chosenVoice = frVoice;
+    chosenLang = 'fr-FR';
+  }
+
+  const utterance = new SpeechSynthesisUtterance(finalText);
+  utterance.lang = chosenLang;
+  utterance.rate = 0.88;
+  if (chosenVoice) utterance.voice = chosenVoice;
 
   isAudioPlaying = true;
   currentAudioName = nom;
