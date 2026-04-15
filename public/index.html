@@ -1313,7 +1313,6 @@ function buildLocalRecipes(screen, paysList, tmax, userIngredients) {
       const dispo = allIng.filter(ri => {
         const normRi = normalizeStr(ri);
         return normUser.some(nu => normRi.includes(nu) || nu.includes(normRi) ||
-          // handle simple plural (tomate/tomates, œuf/œufs)
           normRi.includes(nu.replace(/s$/, '')) || nu.includes(normRi.replace(/s$/, ''))
         );
       });
@@ -1321,6 +1320,14 @@ function buildLocalRecipes(screen, paysList, tmax, userIngredients) {
       const matchScore = Math.min(100, 50 + Math.round((dispo.length / allIng.length) * 50));
       return { ...r, match: matchScore, ingredients_dispo: dispo, ingredients_manquants: manquants };
     });
+
+    // Prioritise recipes the user can actually make with what they have
+    // Try strictest filter first, relax progressively if not enough results
+    const levels = [0, 1, 2, 3];
+    for (const maxMissing of levels) {
+      const filtered = pool.filter(r => (r.ingredients_manquants || []).length <= maxMissing);
+      if (filtered.length >= 3) { pool = filtered; break; }
+    }
   }
 
   pool.sort((a, b) => b.match - a.match);
