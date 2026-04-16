@@ -117,7 +117,8 @@ body{background:var(--bg3);font-family:var(--sans);color:var(--text);min-height:
 .country-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:0 20px 9px}
 .country-btn{border:1px solid var(--border);border-radius:var(--radius);padding:8px 4px;cursor:pointer;background:var(--bg2);text-align:center;transition:all .12s;font-family:var(--sans)}
 .country-btn:hover{border-color:var(--border2)}
-.country-flag{font-size:19px;display:block;margin-bottom:2px;line-height:1}
+.country-flag{display:block;margin-bottom:3px;line-height:1}
+.country-flag img{width:32px;height:22px;border-radius:3px;object-fit:cover;display:block;margin:0 auto;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .country-name{font-size:10px;color:var(--text2);line-height:1.2}
 .country-btn.sg{border:2px solid var(--green-400);background:var(--green-50)}.country-btn.sg .country-name{color:var(--green-800);font-weight:500}
 .country-btn.so{border:2px solid var(--amber-600);background:var(--amber-50)}.country-btn.so .country-name{color:var(--amber-800);font-weight:500}
@@ -482,12 +483,12 @@ const SCREEN_META = {
 };
 
 const COUNTRIES = [
-  {flag:'🇫🇷',name:'France'},{flag:'🇮🇹',name:'Italie'},{flag:'🇲🇦',name:'Maroc'},
-  {flag:'🇹🇳',name:'Tunisie'},{flag:'🇯🇵',name:'Japon'},{flag:'🇮🇳',name:'Inde'},
-  {flag:'🇲🇽',name:'Mexique'},{flag:'🇬🇷',name:'Grèce'},{flag:'🇱🇧',name:'Liban'},
-  {flag:'🇨🇳',name:'Chine'},{flag:'🇹🇭',name:'Thaïlande'},{flag:'🇪🇸',name:'Espagne'},
-  {flag:'🇸🇳',name:'Sénégal'},{flag:'🇩🇿',name:'Algérie'},{flag:'🇹🇷',name:'Turquie'},
-  {flag:'🇻🇳',name:'Vietnam'},{flag:'🇵🇪',name:'Pérou'},{flag:'🇪🇹',name:'Éthiopie'}
+  {flag:'🇫🇷',code:'fr',name:'France'},{flag:'🇮🇹',code:'it',name:'Italie'},{flag:'🇲🇦',code:'ma',name:'Maroc'},
+  {flag:'🇹🇳',code:'tn',name:'Tunisie'},{flag:'🇯🇵',code:'jp',name:'Japon'},{flag:'🇮🇳',code:'in',name:'Inde'},
+  {flag:'🇲🇽',code:'mx',name:'Mexique'},{flag:'🇬🇷',code:'gr',name:'Grèce'},{flag:'🇱🇧',code:'lb',name:'Liban'},
+  {flag:'🇨🇳',code:'cn',name:'Chine'},{flag:'🇹🇭',code:'th',name:'Thaïlande'},{flag:'🇪🇸',code:'es',name:'Espagne'},
+  {flag:'🇸🇳',code:'sn',name:'Sénégal'},{flag:'🇩🇿',code:'dz',name:'Algérie'},{flag:'🇹🇷',code:'tr',name:'Turquie'},
+  {flag:'🇻🇳',code:'vn',name:'Vietnam'},{flag:'🇵🇪',code:'pe',name:'Pérou'},{flag:'🇪🇹',code:'et',name:'Éthiopie'}
 ];
 
 // Dialect/language code per country for native-voice audio
@@ -632,7 +633,7 @@ function buildCountryGrid(screen) {
   COUNTRIES.forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'country-btn' + (selectedCountries[screen].includes(c.name) ? ' ' + selClass : '');
-    btn.innerHTML = `<span class="country-flag">${c.flag}</span><span class="country-name">${c.name}</span>`;
+    btn.innerHTML = `<span class="country-flag"><img src="https://flagcdn.com/32x24/${c.code}.png" alt="${c.name}" loading="lazy"></span><span class="country-name">${c.name}</span>`;
     btn.onclick = () => {
       const idx = selectedCountries[screen].indexOf(c.name);
       if (idx >= 0) selectedCountries[screen].splice(idx, 1);
