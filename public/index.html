@@ -1359,6 +1359,15 @@ function buildLocalRecipes(screen, paysList, tmax, userIngredients) {
 }
 
 // ============================================================
+// SERVICE WORKER (PWA)
+// ============================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+// ============================================================
 // INIT
 // ============================================================
 ['frigo','kids','regime'].forEach(s => {
