@@ -1372,10 +1372,10 @@ function buildLocalRecipes(screen, paysList, tmax, userIngredients) {
 
     // Prioritise recipes the user can actually make with what they have
     // Try strictest filter first, relax progressively if not enough results
-    const levels = [0, 1, 2, 3];
+    const levels = [0, 1, 2, 3, 4, 5];
     for (const maxMissing of levels) {
       const filtered = pool.filter(r => (r.ingredients_manquants || []).length <= maxMissing);
-      if (filtered.length >= 3) { pool = filtered; break; }
+      if (filtered.length >= 6) { pool = filtered; break; }
     }
   }
 
@@ -1387,7 +1387,7 @@ function buildLocalRecipes(screen, paysList, tmax, userIngredients) {
     defaults.forEach(r => { if (!pool.find(p => p.nom === r.nom)) pool.push(r); });
   }
 
-  return pool.slice(0, 3).map(r => {
+  return pool.slice(0, 8).map(r => {
     if (screen === 'kids' && !r.legume_cache) r.legume_cache = 'Légumes incorporés dans la recette';
     if (screen === 'regime' && !r.info_nutritionnelle) r.info_nutritionnelle = 'Recette équilibrée, adaptable à votre régime';
     return r;
