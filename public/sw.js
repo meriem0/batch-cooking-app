@@ -1,4 +1,4 @@
-const CACHE = 'batch-cooking-v1';
+const CACHE = 'batch-cooking-v2';
 const ASSETS = [
   '/',
   '/index.html',
